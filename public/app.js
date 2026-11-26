@@ -1945,10 +1945,6 @@
     }, 120);
   }
 
-  let rawMicStream = null;
-  let voiceGateTimer = null;
-  let voiceGateNodes = null;
-
   function tuneOpusSdp(sdp) {
     if (!sdp || typeof sdp !== 'string') return sdp;
     try {
@@ -1963,13 +1959,22 @@
       }
       if (!opusPayload) return sdp;
       const fmtpPrefix = `a=fmtp:${opusPayload} `;
-      const targetParams = 'usedtx=1;useinbandfec=1;stereo=0;sprop-stereo=0;maxaveragebitrate=32000';
+      // 16kHz wideband voice + DTX (silence suppression) + FEC eliminates hiss & saves bandwidth
+      const params = [
+        'usedtx=1',
+        'useinbandfec=1',
+        'stereo=0',
+        'sprop-stereo=0',
+        'maxplaybackrate=16000',
+        'sprop-maxcapturerate=16000',
+        'maxaveragebitrate=24000'
+      ];
       let found = false;
       const out = lines.map((line) => {
         if (line.startsWith(fmtpPrefix)) {
           found = true;
           let updated = line;
-          ['usedtx=1', 'useinbandfec=1', 'stereo=0', 'sprop-stereo=0', 'maxaveragebitrate=32000'].forEach((kv) => {
+          params.forEach((kv) => {
             const key = kv.split('=')[0];
             const re = new RegExp(`${key}=[^;\\s]+`, 'i');
             if (re.test(updated)) updated = updated.replace(re, kv);
@@ -1981,137 +1986,11 @@
       });
       if (!found) {
         const rtpmapIdx = out.findIndex((l) => l.startsWith(`a=rtpmap:${opusPayload} `));
-        if (rtpmapIdx !== -1) out.splice(rtpmapIdx + 1, 0, `${fmtpPrefix}${targetParams}`);
+        if (rtpmapIdx !== -1) out.splice(rtpmapIdx + 1, 0, `${fmtpPrefix}${params.join(';')}`);
       }
       return out.join('\r\n');
     } catch (_) {
       return sdp;
-    }
-  }
-
-  function destroyVoiceProcessingChain() {
-    if (voiceGateTimer) {
-      clearInterval(voiceGateTimer);
-      voiceGateTimer = null;
-    }
-    if (voiceGateNodes) {
-      try {
-        voiceGateNodes.source.disconnect();
-        voiceGateNodes.highpass.disconnect();
-        voiceGateNodes.lowpass.disconnect();
-        voiceGateNodes.compressor.disconnect();
-        voiceGateNodes.analyser.disconnect();
-        voiceGateNodes.gateGain.disconnect();
-      } catch (_) {}
-      voiceGateNodes = null;
-    }
-  }
-
-  function buildCleanVoiceStream(rawStream) {
-    try {
-      const ctx = ensureVoiceAudioCtx();
-      if (!ctx || typeof ctx.createMediaStreamDestination !== 'function') {
-        return rawStream;
-      }
-      destroyVoiceProcessingChain();
-
-      const source = ctx.createMediaStreamSource(rawStream);
-
-      // 1) High-pass filter (130 Hz): kills fan rumble, AC hum, table thumps
-      const highpass = ctx.createBiquadFilter();
-      highpass.type = 'highpass';
-      highpass.frequency.value = 130;
-      highpass.Q.value = 0.85;
-
-      // 2) Low-pass filter (3600 Hz): kills high-frequency hiss & speaker feedback whistle
-      const lowpass = ctx.createBiquadFilter();
-      lowpass.type = 'lowpass';
-      lowpass.frequency.value = 3600;
-      lowpass.Q.value = 0.85;
-
-      // 3) Gentle voice dynamics compressor (smooths shouts without boosting silence)
-      const compressor = ctx.createDynamicsCompressor();
-      compressor.threshold.value = -24;
-      compressor.knee.value = 18;
-      compressor.ratio.value = 4;
-      compressor.attack.value = 0.005;
-      compressor.release.value = 0.12;
-
-      // 4) Real-time adaptive Voice Activity Noise Gate + Anti-Echo Ducking
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 512;
-      const timeData = new Float32Array(analyser.fftSize);
-
-      const gateGain = ctx.createGain();
-      gateGain.gain.value = 0.0;
-
-      const dest = ctx.createMediaStreamDestination();
-
-      source.connect(highpass);
-      highpass.connect(lowpass);
-      lowpass.connect(compressor);
-      compressor.connect(analyser);
-      compressor.connect(gateGain);
-      gateGain.connect(dest);
-
-      voiceGateNodes = { source, highpass, lowpass, compressor, analyser, gateGain, dest };
-
-      let noiseFloor = 0.006;
-      let gateOpenUntil = 0;
-      let gateIsOpen = false;
-
-      voiceGateTimer = setInterval(() => {
-        if (!voiceJoined || !voiceGateNodes) return;
-        const now = ctx.currentTime;
-        if (voiceMuted) {
-          if (gateIsOpen) {
-            gateGain.gain.setTargetAtTime(0.0, now, 0.015);
-            gateIsOpen = false;
-          }
-          return;
-        }
-
-        analyser.getFloatTimeDomainData(timeData);
-        let sumSq = 0;
-        for (let i = 0; i < timeData.length; i++) {
-          const v = timeData[i];
-          sumSq += v * v;
-        }
-        const rms = Math.sqrt(sumSq / timeData.length);
-
-        // Check if any remote peer is actively speaking (anti-echo half-duplex guard)
-        let remoteTalking = false;
-        for (const pid of speakingPeers) {
-          if (pid !== myId) {
-            remoteTalking = true;
-            break;
-          }
-        }
-
-        // Slowly adapt ambient room noise floor when quiet
-        if (!gateIsOpen && rms < 0.04) {
-          noiseFloor = noiseFloor * 0.94 + rms * 0.06;
-        }
-
-        const baseThreshold = Math.max(0.018, Math.min(0.055, noiseFloor * 2.5));
-        const openThreshold = remoteTalking ? baseThreshold * 1.55 : baseThreshold;
-        const nowMs = Date.now();
-
-        if (rms >= openThreshold) {
-          gateOpenUntil = nowMs + 260; // smooth 260ms hold so words never clip
-          if (!gateIsOpen) {
-            gateGain.gain.setTargetAtTime(remoteTalking ? 0.72 : 1.0, now, 0.012);
-            gateIsOpen = true;
-          }
-        } else if (gateIsOpen && nowMs > gateOpenUntil) {
-          gateGain.gain.setTargetAtTime(0.0, now, 0.045);
-          gateIsOpen = false;
-        }
-      }, 25);
-
-      return dest.stream;
-    } catch (_) {
-      return rawStream;
     }
   }
 
@@ -2148,7 +2027,7 @@
         audioEl.autoplay = true;
         audioEl.playsInline = true;
         audioEl.muted = false;
-        audioEl.volume = 0.8; // 80% prevents phone speaker-to-mic acoustic echo loop
+        audioEl.volume = 0.72; // Optimal speakerphone level so hardware AEC cancels 100% echo
         audioEl.dataset.peerId = peerId;
         voiceAudioContainer?.appendChild(audioEl);
         remoteAudioEls.set(peerId, audioEl);
@@ -2282,16 +2161,15 @@
     }
     voiceJoining = true;
     try {
-      rawMicStream = await navigator.mediaDevices.getUserMedia({
+      // Direct hardware mic stream keeps Android/iOS/Chrome Hardware DSP AEC + Noise Suppression 100% active!
+      localAudioStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
-          sampleRate: 48000,
-          echoCancellation: { ideal: true },
-          noiseSuppression: { ideal: true },
-          autoGainControl: { ideal: false },
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
           googEchoCancellation: true,
           googNoiseSuppression: true,
-          googAutoGainControl: false,
           googHighpassFilter: true,
           googTypingNoiseDetection: true
         },
@@ -2299,8 +2177,8 @@
       });
     } catch (_) {
       try {
-        rawMicStream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false },
+        localAudioStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
           video: false
         });
       } catch (err) {
@@ -2310,7 +2188,6 @@
       }
     }
 
-    localAudioStream = buildCleanVoiceStream(rawMicStream);
     await loadIceConfig();
 
     voiceJoining = false;
@@ -2320,7 +2197,7 @@
     if (myId) attachSpeakingAnalyser(myId, localAudioStream);
     updateVoiceChatButtons();
     send({ type: 'voice_join' });
-    showToast('🎙️ Connected to Table Voice Chat (Noise Filter Active)');
+    showToast('🎙️ Connected to Table Voice Chat (Hardware Echo & Noise Cancel)');
   }
 
   function leaveVoiceChat(notifyServer = true) {
@@ -2338,18 +2215,15 @@
       speakingPollTimer = null;
     }
     speakingPeers.clear();
-    destroyVoiceProcessingChain();
 
-    [localAudioStream, rawMicStream].forEach((stream) => {
-      if (!stream) return;
-      for (const track of stream.getTracks()) {
+    if (localAudioStream) {
+      for (const track of localAudioStream.getTracks()) {
         try {
           track.stop();
         } catch (_) {}
       }
-    });
-    localAudioStream = null;
-    rawMicStream = null;
+      localAudioStream = null;
+    }
 
     if (notifyServer && wasJoined) {
       send({ type: 'voice_leave' });
@@ -2361,12 +2235,9 @@
   function toggleVoiceMute() {
     if (!voiceJoined || !localAudioStream) return;
     voiceMuted = !voiceMuted;
-    [localAudioStream, rawMicStream].forEach((stream) => {
-      if (!stream) return;
-      for (const track of stream.getAudioTracks()) {
-        track.enabled = !voiceMuted;
-      }
-    });
+    for (const track of localAudioStream.getAudioTracks()) {
+      track.enabled = !voiceMuted;
+    }
     if (voiceMuted && myId) speakingPeers.delete(myId);
     updateVoiceChatButtons();
     send({ type: 'voice_mute', muted: voiceMuted });

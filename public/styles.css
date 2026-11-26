@@ -3094,15 +3094,15 @@ html, body {
   .table-arena {
     flex: 1;
     min-height: 0;
-    padding: 36px 42px 30px;
+    padding: 46px 44px 38px;
     overflow: hidden;
   }
 
   .poker-table {
-    width: calc(100vw - 84px);
+    width: calc(100vw - 88px);
     max-width: 440px;
-    height: min(310px, 40dvh);
-    min-height: 185px;
+    height: min(290px, 37dvh);
+    min-height: 175px;
   }
 
   .table-rail {
