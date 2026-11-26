@@ -1620,20 +1620,9 @@
 
   let lastRenderedLogSig = '';
   function renderActionLog(logs) {
-    const isInitialBatch = seenLogIds.size === 0;
-    const newLogs = [];
     for (const item of logs) {
       if (!seenLogIds.has(item.id)) {
         seenLogIds.add(item.id);
-        newLogs.push(item);
-      }
-    }
-
-    if (newLogs.length > 0) {
-      if (isInitialBatch) {
-        window.pokerSound?.narrateBatch([newLogs[newLogs.length - 1].message]);
-      } else {
-        window.pokerSound?.narrateBatch(newLogs.map((item) => item.message));
       }
     }
 

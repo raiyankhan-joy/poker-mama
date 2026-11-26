@@ -278,125 +278,15 @@ class PokerSound {
    * Picks the most relevant live callout from a batch of new log lines
    * so voice never falls behind fast gameplay.
    */
-  narrateBatch(rawMessages) {
-    if (!this.voiceEnabled || !Array.isArray(rawMessages) || rawMessages.length === 0) return;
-    let best = null;
-    for (const raw of rawMessages) {
-      const item = this._formatDealerCallout(raw);
-      if (!item) continue;
-      if (!best || item.priority >= best.priority) {
-        best = item;
-      }
-    }
-    if (best) {
-      this._speakLive(best.text, best.priority);
-    }
-  }
+  narrateBatch() {}
 
-  /**
-   * Single-line entry point (backwards compatible).
-   */
-  narrateLog(rawMessage) {
-    this.narrateBatch([rawMessage]);
-  }
+  narrateLog() {}
 
-  /**
-   * Direct voice utterance (e.g., for toggles or quick callouts).
-   */
-  speak(text, cancelPrevious = true) {
-    if (!this.voiceEnabled || !text || typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      return;
-    }
-    this._speakLive(text, cancelPrevious ? 3 : 1);
-  }
+  speak() {}
 
-  _speakLive(text, priority = 1) {
-    if (!this.voiceEnabled || !text || typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      return;
-    }
+  _speakLive() {}
 
-    // Never interrupt an active Winner announcement with normal actions
-    if (this._speaking && this._currentPriority >= 3 && priority < 3) {
-      return;
-    }
-
-    // Silky-smooth flow: if a short action is already mid-word and another normal action arrives,
-    // let the current word finish cleanly (~0.5s) and immediately play ONLY the latest action (no backlog, no clipping!)
-    if (this._speaking && priority === 1 && this._currentPriority === 1) {
-      this._pendingNext = { text, priority };
-      return;
-    }
-
-    this._pendingNext = null;
-    this._dispatchUtterance(text, priority, this._speaking);
-  }
-
-  _dispatchUtterance(text, priority, needsCancel = false) {
-    if (this._speechSafetyTimer) {
-      clearTimeout(this._speechSafetyTimer);
-      this._speechSafetyTimer = null;
-    }
-    if (this._speakDelayTimer) {
-      clearTimeout(this._speakDelayTimer);
-      this._speakDelayTimer = null;
-    }
-
-    this._speaking = true;
-    this._currentPriority = priority;
-
-    const launch = () => {
-      if (!this.voiceEnabled) {
-        this._speaking = false;
-        this._currentPriority = 0;
-        return;
-      }
-      try {
-        const utter = new SpeechSynthesisUtterance(text);
-        if (this._selectedVoice) {
-          utter.voice = this._selectedVoice;
-        }
-        utter.lang = 'en-US';
-        // Silky-smooth, clear, natural casino dealer cadence
-        utter.pitch = 1.04;
-        utter.rate = 1.16;
-        utter.volume = 0.92;
-
-        const finish = () => {
-          if (this._speechSafetyTimer) {
-            clearTimeout(this._speechSafetyTimer);
-            this._speechSafetyTimer = null;
-          }
-          const queued = this._pendingNext;
-          this._pendingNext = null;
-          if (queued && this.voiceEnabled) {
-            this._dispatchUtterance(queued.text, queued.priority, false);
-          } else {
-            this._speaking = false;
-            this._currentPriority = 0;
-          }
-        };
-
-        utter.onend = finish;
-        utter.onerror = finish;
-        this._speechSafetyTimer = setTimeout(finish, 2600);
-
-        window.speechSynthesis.speak(utter);
-      } catch (_) {
-        this._speaking = false;
-        this._currentPriority = 0;
-      }
-    };
-
-    if (needsCancel) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch (_) {}
-      // 35ms micro-debounce prevents Chrome/Safari audio crackle or dropped utterances after cancel()
-      this._speakDelayTimer = setTimeout(launch, 35);
-    } else {
-      launch();
-    }
-  }
+  _dispatchUtterance() {}
 
   playDeal() {
     if (this.muted) return;
