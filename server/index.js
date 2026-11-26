@@ -37,7 +37,7 @@ const socketSessionMap = new Map();
 const rateLimitMap = new Map();
 
 function isRateLimited(clientId, msgType) {
-  if (msgType === 'voice_signal' || msgType === 'ping_latency') return false;
+  if (msgType === 'voice_signal' || msgType === 'ping_latency' || msgType === 'hb') return false;
   const now = Date.now();
   let entry = rateLimitMap.get(clientId);
   if (!entry || now > entry.resetAt) {
@@ -389,17 +389,9 @@ const httpServer = http.createServer(async (req, res) => {
 
   // 2) Live Public Tables API (for Online Browser & Matchmaking)
   if (urlPath === '/api/rooms' && method === 'GET') {
-    let activeOnline = 0;
-    for (const [id, c] of wss.clients.entries()) {
-      if (c.closed || c.socket.destroyed) {
-        wss.clients.delete(id);
-      } else {
-        activeOnline += 1;
-      }
-    }
     return sendJSON(res, 200, {
       rooms: getPublicRoomsList(),
-      onlinePlayers: activeOnline
+      onlinePlayers: wss.getUniqueOnlineCount()
     });
   }
 
@@ -585,6 +577,9 @@ wss.on('connection', (client) => {
     }
 
     switch (msg.type) {
+      case 'hb':
+        break;
+
       case 'ping_latency': {
         client.sendJSON({ type: 'pong_latency', ts: Number(msg.ts) || Date.now() });
         break;

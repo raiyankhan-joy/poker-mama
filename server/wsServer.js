@@ -203,6 +203,14 @@ class WSServer extends EventEmitter {
 
       const clientId = crypto.randomBytes(8).toString('hex');
       const client = new WSClient(socket, clientId);
+      const rawFwd =
+        req.headers['cf-connecting-ip'] ||
+        (typeof req.headers['x-forwarded-for'] === 'string'
+          ? req.headers['x-forwarded-for'].split(',')[0]
+          : '') ||
+        socket.remoteAddress ||
+        clientId;
+      client.ip = String(rawFwd).trim().replace(/^::ffff:/i, '') || clientId;
       this.clients.set(clientId, client);
 
       client.on('close', () => {
@@ -212,7 +220,7 @@ class WSServer extends EventEmitter {
       this.emit('connection', client);
     });
 
-    // Heartbeat to detect stale sockets
+    // Fast heartbeat (10s) to detect offline/stale sockets accurately
     this._interval = setInterval(() => {
       for (const [id, client] of this.clients.entries()) {
         if (client.closed || client.socket.destroyed) {
@@ -227,7 +235,19 @@ class WSServer extends EventEmitter {
         client.alive = false;
         client.ping();
       }
-    }, 20000);
+    }, 10000);
+  }
+
+  getUniqueOnlineCount() {
+    const uniqueIps = new Set();
+    for (const [id, client] of this.clients.entries()) {
+      if (client.closed || client.socket.destroyed) {
+        this.clients.delete(id);
+      } else {
+        uniqueIps.add(client.ip || id);
+      }
+    }
+    return uniqueIps.size;
   }
 
   close() {

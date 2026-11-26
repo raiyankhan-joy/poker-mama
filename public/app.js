@@ -2395,10 +2395,14 @@
     }
   });
 
-  // Live Server Latency (Ping) Monitor every 5 seconds
+  // Live Server Latency (Ping) & Presence Heartbeat every 5 seconds
   setInterval(() => {
-    if (ws && ws.readyState === WebSocket.OPEN && !gameScreen.classList.contains('hidden')) {
-      ws.send(JSON.stringify({ type: 'ping_latency', ts: Date.now() }));
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      if (!gameScreen.classList.contains('hidden')) {
+        ws.send(JSON.stringify({ type: 'ping_latency', ts: Date.now() }));
+      } else {
+        ws.send(JSON.stringify({ type: 'hb' }));
+      }
     }
   }, 5000);
 
