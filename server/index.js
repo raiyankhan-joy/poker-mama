@@ -601,7 +601,7 @@ wss.on('connection', (client) => {
         let matchedRoom = null;
         for (const room of rooms.values()) {
           const g = room.game;
-          if (g.isPublic && g.phase === PHASES.LOBBY && g.players.length < g.maxPlayers) {
+          if (room.isQuickMatch && g.phase === PHASES.LOBBY && g.players.length < g.maxPlayers) {
             if (g.startingCoins === preferredCoins) {
               matchedRoom = room;
               break;
@@ -630,7 +630,7 @@ wss.on('connection', (client) => {
           }
         }
 
-        // No open public room found -> create a new Public Matchmaking room
+        // No open Quick Match room found -> create a new Quick Match room
         createNewRoomForClient(client, {
           playerName,
           avatar: playerAvatar,
@@ -638,6 +638,7 @@ wss.on('connection', (client) => {
           startingCoins: preferredCoins,
           useBlinds: Boolean(msg.useBlinds),
           isPublic: true,
+          isQuickMatch: true,
           fillWithBots: false
         });
         break;
