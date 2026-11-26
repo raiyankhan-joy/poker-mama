@@ -104,14 +104,24 @@
           </div>
 
           <div class="join-inline-row">
-            <input id="room-code-input" class="room-code-input" type="text" maxlength="120" placeholder="ENTER ROOM CODE" />
+            <input id="room-code-input" class="room-code-input" type="text" maxlength="120" placeholder="ENTER ROOM CODE OR LINK" />
             <button id="btn-join-room" class="btn btn-gold">Join</button>
           </div>
 
           <div class="live-tables-section">
             <div class="live-tables-header">
-              <span class="online-pill" id="lobby-online-pill">● Live Public Tables</span>
-              <button id="btn-refresh-rooms" class="q-btn" style="flex:none; padding:5px 12px;">🔄 Refresh</button>
+              <span class="online-pill" id="lobby-online-pill">
+                <span class="live-pulse-dot"></span>
+                <span id="lobby-online-text">Live Public Tables</span>
+              </span>
+              <div class="live-tables-controls">
+                <div class="table-filter-tabs" id="table-filter-tabs" role="tablist">
+                  <button type="button" class="filter-tab active" data-filter="all">All</button>
+                  <button type="button" class="filter-tab" data-filter="open">Open</button>
+                  <button type="button" class="filter-tab" data-filter="live">Live</button>
+                </div>
+                <button id="btn-refresh-rooms" class="refresh-icon-btn" title="Refresh Live Tables" aria-label="Refresh Live Tables">↻</button>
+              </div>
             </div>
             <div id="live-tables-list" class="live-tables-list">
               <div class="empty-tables-msg">

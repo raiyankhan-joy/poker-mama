@@ -223,12 +223,15 @@ function getPublicRoomsList() {
       roomId,
       status: isOpen ? 'OPEN' : 'LIVE',
       hostName: host ? host.name : 'Host',
+      hostAvatar: host && host.avatar ? host.avatar : '🕶️',
       playersCount: g.players.length,
       maxPlayers: g.maxPlayers,
       startingCoins: g.startingCoins,
       boardFee: g.boardFee,
       useBlinds: g.useBlinds,
       handNumber: g.handNumber,
+      pot: g.pot || 0,
+      voiceCount: room.voicePeers ? room.voicePeers.size : 0,
       spectatorCount: room.spectators ? room.spectators.size : 0
     });
   }

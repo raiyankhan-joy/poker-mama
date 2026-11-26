@@ -442,61 +442,144 @@
     }
   });
 
-  // Live Public Tables Browser API (supports both OPEN tables to Join and LIVE tables to Spectate!)
+  // Live Public Tables Browser API (supports OPEN tables to Join, LIVE tables to Watch, and instant filter tabs!)
+  let liveTableFilter = 'all';
+  let lastLiveRoomsData = [];
+
+  function renderSeatDots(count, max) {
+    const safeMax = Math.min(8, Math.max(2, Number(max) || 4));
+    const filled = Math.min(safeMax, Math.max(0, Number(count) || 0));
+    let html = '<span class="seat-dots" aria-hidden="true">';
+    for (let i = 0; i < safeMax; i++) {
+      html += `<span class="seat-dot${i < filled ? ' filled' : ''}"></span>`;
+    }
+    html += '</span>';
+    return html;
+  }
+
+  function renderLiveTablesList() {
+    const listEl = $('live-tables-list');
+    if (!listEl) return;
+
+    const rooms = lastLiveRoomsData || [];
+    const filtered = rooms.filter((r) => {
+      if (liveTableFilter === 'open') return r.status === 'OPEN';
+      if (liveTableFilter === 'live') return r.status === 'LIVE';
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      const msg =
+        rooms.length === 0
+          ? 'No active public tables right now.<br/>Create a room or hit <strong>Quick Match</strong> to deal!'
+          : liveTableFilter === 'open'
+            ? 'No open tables waiting right now.<br/>Switch to <strong>Live</strong> to watch, or create a new room!'
+            : 'No live hands in progress right now.<br/>Join an <strong>Open</strong> table to start dealing!';
+      listEl.innerHTML = `<div class="empty-tables-msg"><div class="empty-tables-icon">🃏</div><div>${msg}</div></div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered
+      .map((r) => {
+        const isLive = r.status === 'LIVE';
+        const statusBadge = isLive
+          ? `<span class="table-status-badge live"><span class="status-dot live"></span>LIVE &bull; Rd #${r.handNumber || 1}</span>`
+          : `<span class="table-status-badge open"><span class="status-dot open"></span>OPEN</span>`;
+        const voiceBadge =
+          r.voiceCount > 0
+            ? `<span class="voice-live-tag" title="${r.voiceCount} player(s) in Voice Chat">🎙️ ${r.voiceCount}</span>`
+            : '';
+        const actionBtn = isLive
+          ? `<button type="button" class="btn btn-watch-violet" data-watch-code="${escapeHtml(r.roomId)}">👁️ Watch</button>`
+          : `<button type="button" class="btn btn-join-emerald" data-join-code="${escapeHtml(r.roomId)}">Join ▸</button>`;
+        const potChip =
+          isLive && r.pot > 0 ? `<span class="table-meta-chip pot">Pot 🪙 ${r.pot}</span>` : '';
+        const specChip =
+          r.spectatorCount > 0 ? `<span class="table-meta-chip">👁️ ${r.spectatorCount}</span>` : '';
+        return `
+          <div class="live-table-row ${isLive ? 'is-live' : 'is-open'}">
+            <div class="table-host-avatar" aria-hidden="true">${escapeHtml(r.hostAvatar || '🕶️')}</div>
+            <div class="live-table-info">
+              <div class="table-row-top">
+                <strong class="table-title">${escapeHtml(r.hostName)}'s Table</strong>
+                <button type="button" class="room-code-chip" data-copy-code="${escapeHtml(r.roomId)}" title="Click to copy Room Code">#${escapeHtml(r.roomId)}</button>
+                ${statusBadge}
+                ${voiceBadge}
+              </div>
+              <div class="table-row-meta">
+                <span class="table-seats-meta" title="${r.playersCount} of ${r.maxPlayers} seats filled">${renderSeatDots(r.playersCount, r.maxPlayers)}<span>${r.playersCount}/${r.maxPlayers}</span></span>
+                <span class="table-meta-chip gold">🪙 ${r.startingCoins}</span>
+                <span class="table-meta-chip">Fee ${r.boardFee}</span>
+                ${potChip}
+                ${specChip}
+              </div>
+            </div>
+            ${actionBtn}
+          </div>
+        `;
+      })
+      .join('');
+
+    listEl.querySelectorAll('[data-join-code]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const name = playerNameInput.value.trim() || 'Player';
+        send({ type: 'join_room', roomId: btn.dataset.joinCode, playerName: name, avatar: selectedAvatar });
+      });
+    });
+    listEl.querySelectorAll('[data-watch-code]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const name = playerNameInput.value.trim() || 'Spectator';
+        send({ type: 'spectate_room', roomId: btn.dataset.watchCode, playerName: name });
+      });
+    });
+    listEl.querySelectorAll('[data-copy-code]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const code = btn.dataset.copyCode;
+        if (roomCodeInput) roomCodeInput.value = code;
+        navigator.clipboard?.writeText(code).catch(() => {});
+        showToast(`📋 Room code ${code} copied!`);
+      });
+    });
+  }
+
   async function fetchLiveRooms() {
     const listEl = $('live-tables-list');
-    const pillEl = $('lobby-online-pill');
+    const onlineTextEl = $('lobby-online-text');
     if (!listEl) return;
     try {
       const res = await fetch('/api/rooms');
       const data = await res.json();
-      if (pillEl) {
-        pillEl.textContent = `● ${data.onlinePlayers || 1} Online • ${data.rooms.length} Tables`;
+      lastLiveRoomsData = Array.isArray(data.rooms) ? data.rooms : [];
+      if (onlineTextEl) {
+        const count = lastLiveRoomsData.length;
+        onlineTextEl.textContent = `${data.onlinePlayers || 1} Online • ${count} ${count === 1 ? 'Table' : 'Tables'}`;
       }
-      if (!data.rooms || data.rooms.length === 0) {
-        listEl.innerHTML =
-          '<div class="empty-tables-msg"><div class="empty-tables-icon">🃏</div><div>No active public tables right now.<br/>Create a room or hit <strong>Quick Match</strong> to deal!</div></div>';
-        return;
-      }
-      listEl.innerHTML = data.rooms
-        .map((r) => {
-          const isLive = r.status === 'LIVE';
-          const statusBadge = isLive
-            ? `<span class="table-status-badge live">LIVE Rd #${r.handNumber || 1}</span>`
-            : `<span class="table-status-badge open">OPEN</span>`;
-          const actionBtn = isLive
-            ? `<button type="button" class="btn btn-purple" style="padding:6px 12px; font-size:0.78rem;" data-watch-code="${escapeHtml(r.roomId)}">👁️ Watch</button>`
-            : `<button type="button" class="btn btn-sapphire" style="padding:6px 12px; font-size:0.8rem;" data-join-code="${escapeHtml(r.roomId)}">Join</button>`;
-          return `
-            <div class="live-table-row">
-              <div class="live-table-info">
-                <strong>${escapeHtml(r.hostName)}'s Table (${escapeHtml(r.roomId)}) ${statusBadge}</strong>
-                <span>Players: ${r.playersCount}/${r.maxPlayers} &bull; 🪙 ${r.startingCoins} &bull; Fee ${r.boardFee}${r.useBlinds ? ' + Blinds' : ''}${r.spectatorCount > 0 ? ` &bull; 👁️ ${r.spectatorCount}` : ''}</span>
-              </div>
-              ${actionBtn}
-            </div>
-          `;
-        })
-        .join('');
-
-      listEl.querySelectorAll('[data-join-code]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const name = playerNameInput.value.trim() || 'Player';
-          send({ type: 'join_room', roomId: btn.dataset.joinCode, playerName: name, avatar: selectedAvatar });
-        });
-      });
-      listEl.querySelectorAll('[data-watch-code]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const name = playerNameInput.value.trim() || 'Spectator';
-          send({ type: 'spectate_room', roomId: btn.dataset.watchCode, playerName: name });
-        });
-      });
+      renderLiveTablesList();
     } catch (_) {
       // ignore transient network errors
     }
   }
 
-  $('btn-refresh-rooms')?.addEventListener('click', fetchLiveRooms);
+  $('table-filter-tabs')?.querySelectorAll('.filter-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      liveTableFilter = tab.dataset.filter || 'all';
+      $('table-filter-tabs')
+        ?.querySelectorAll('.filter-tab')
+        .forEach((t) => t.classList.toggle('active', t === tab));
+      renderLiveTablesList();
+    });
+  });
+
+  $('btn-refresh-rooms')?.addEventListener('click', () => {
+    const btn = $('btn-refresh-rooms');
+    if (btn) {
+      btn.classList.remove('spinning');
+      void btn.offsetWidth;
+      btn.classList.add('spinning');
+    }
+    fetchLiveRooms();
+  });
   fetchLiveRooms();
   setInterval(() => {
     if (!lobbyScreen.classList.contains('hidden')) {
