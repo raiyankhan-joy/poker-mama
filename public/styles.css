@@ -2867,3 +2867,678 @@ body.theme-crimson .table-felt {
   background: rgba(245, 197, 66, 0.28);
   color: #fff;
 }
+
+/* =====================================================================
+   DEVICE-WISE RESPONSIVE SYSTEM (DESKTOP / TABLET / MOBILE / LANDSCAPE)
+   ===================================================================== */
+html, body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+.lobby-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.game-screen {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- TABLET (<= 1024px) ---------- */
+@media (max-width: 1024px) {
+  .top-bar {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .poker-table {
+    width: min(860px, 92vw);
+    height: min(440px, 50dvh);
+  }
+
+  .seat-box {
+    min-width: 118px;
+    padding: 6px 10px;
+  }
+
+  .seat-node.is-me .seat-box {
+    min-width: 130px;
+  }
+}
+
+/* ---------- MOBILE PORTRAIT & SMALL TABLET (<= 768px) ---------- */
+@media (max-width: 768px) {
+  /* === LOBBY MOBILE === */
+  .lobby-screen {
+    padding: 16px 10px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .brand-header {
+    margin-bottom: 14px;
+  }
+
+  .brand-header h1 {
+    font-size: clamp(2rem, 9.5vw, 2.8rem);
+    letter-spacing: 3px;
+  }
+
+  .brand-bangla-slogan {
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+  }
+
+  .player-name-bar {
+    padding: 10px 12px;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .player-name-bar input {
+    width: 100%;
+    max-width: 240px;
+    font-size: 0.95rem;
+  }
+
+  .avatar-picker {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    justify-content: flex-start;
+  }
+
+  .avatar-picker::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lobby-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .lobby-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .card-header h2 {
+    font-size: 1.05rem;
+  }
+
+  .join-inline-row {
+    gap: 8px;
+  }
+
+  .room-code-input {
+    font-size: 0.88rem;
+    letter-spacing: 1.5px;
+    padding: 10px 10px;
+    min-width: 0;
+  }
+
+  .live-tables-section {
+    padding: 10px;
+  }
+
+  .live-tables-header {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .online-pill {
+    font-size: 0.72rem;
+    padding: 4px 9px;
+  }
+
+  .live-tables-list {
+    min-height: 120px;
+    max-height: 240px;
+  }
+
+  .live-table-row {
+    padding: 9px 10px;
+    gap: 8px;
+  }
+
+  .table-host-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.98rem;
+  }
+
+  .table-title {
+    font-size: 0.82rem;
+    max-width: 125px;
+  }
+
+  .btn-join-emerald,
+  .btn-watch-violet {
+    padding: 6px 10px;
+    font-size: 0.74rem;
+  }
+
+  /* === GAME SCREEN TOP BAR (COMPACT 2-STRIP, NO 5-ROW WRAP!) === */
+  .top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: calc(6px + env(safe-area-inset-top)) 8px 6px;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .top-left,
+  .top-right {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 5px;
+    justify-content: flex-start;
+    padding-bottom: 1px;
+  }
+
+  .top-left::-webkit-scrollbar,
+  .top-right::-webkit-scrollbar {
+    display: none;
+  }
+
+  .top-left > *,
+  .top-right > * {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .mini-logo {
+    font-size: 0.82rem;
+    letter-spacing: 1px;
+  }
+
+  .room-badge {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    gap: 4px;
+  }
+
+  .meta-pill {
+    padding: 3px 7px;
+    font-size: 0.7rem;
+  }
+
+  .top-right .icon-btn {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    border-radius: 7px;
+  }
+
+  /* === GAME TABLE ARENA (MAXIMIZED FOR MOBILE) === */
+  .table-arena {
+    flex: 1;
+    min-height: 0;
+    padding: 20px 8px 14px;
+    overflow: hidden;
+  }
+
+  .poker-table {
+    width: 94vw;
+    height: min(360px, 46dvh);
+    min-height: 215px;
+  }
+
+  .table-rail {
+    border-radius: 105px;
+  }
+
+  .table-felt {
+    inset: 11px;
+    border-radius: 94px;
+    border-width: 2px;
+  }
+
+  .felt-inner-ring {
+    inset: 10px;
+    border-radius: 84px;
+  }
+
+  .felt-watermark {
+    top: 15%;
+    font-size: 0.58rem;
+    letter-spacing: 3px;
+  }
+
+  .table-center {
+    gap: 7px;
+  }
+
+  .pot-display {
+    padding: 3px 12px;
+  }
+
+  .pot-label {
+    font-size: 0.54rem;
+    letter-spacing: 1.4px;
+  }
+
+  .pot-value {
+    font-size: 0.96rem;
+  }
+
+  .community-cards {
+    gap: 4px;
+  }
+
+  .card-slot.empty,
+  .playing-card {
+    width: 44px;
+    height: 62px;
+    border-radius: 6px;
+    padding: 3px 4px;
+  }
+
+  .card-rank {
+    font-size: 0.78rem;
+  }
+
+  .card-suit-sm {
+    font-size: 0.65rem;
+  }
+
+  .card-center-suit {
+    font-size: 1.15rem;
+  }
+
+  /* === SEATS ON MOBILE === */
+  .seat-node {
+    gap: 2px;
+  }
+
+  .seat-cards {
+    gap: 3px;
+    margin-bottom: -4px;
+  }
+
+  .playing-card.small {
+    width: 30px;
+    height: 43px;
+    padding: 2px 3px;
+    border-radius: 4px;
+  }
+
+  .playing-card.small .card-rank {
+    font-size: 0.62rem;
+  }
+
+  .playing-card.small .card-suit-sm {
+    font-size: 0.52rem;
+  }
+
+  .playing-card.small .card-center-suit {
+    font-size: 0.82rem;
+  }
+
+  .seat-box {
+    min-width: 82px;
+    max-width: 110px;
+    padding: 4px 7px;
+    border-radius: 9px;
+    border-width: 1.5px;
+  }
+
+  .seat-node.is-me .seat-box {
+    min-width: 96px;
+    max-width: 124px;
+  }
+
+  .seat-name-row {
+    font-size: 0.68rem;
+    gap: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .seat-coins {
+    font-size: 0.68rem;
+    margin-top: 1px;
+  }
+
+  .seat-action-tag,
+  .showdown-hand-pill {
+    font-size: 0.58rem;
+    padding: 1px 6px;
+    margin-top: 2px;
+  }
+
+  .dealer-chip {
+    width: 18px;
+    height: 18px;
+    font-size: 0.6rem;
+    top: -7px;
+    right: -7px;
+  }
+
+  .seat-emote-bubble {
+    font-size: 0.66rem;
+    padding: 2px 7px;
+  }
+
+  /* === OVERLAYS & FLOATING BANNERS ON MOBILE === */
+  .overlay-box {
+    padding: 14px 16px;
+    max-width: 88vw;
+  }
+
+  .overlay-box h3 {
+    font-size: 1rem;
+  }
+
+  .overlay-box p {
+    font-size: 0.78rem;
+  }
+
+  .showdown-banner {
+    padding: 8px 12px;
+    max-width: 90vw;
+  }
+
+  .winner-title {
+    font-size: 0.92rem;
+  }
+
+  .winner-detail {
+    font-size: 0.74rem;
+  }
+
+  .showdown-actions {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .showdown-actions .btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .table-float-banner {
+    width: 94vw;
+    max-width: 94vw;
+    padding: 8px 10px;
+    font-size: 0.76rem;
+    top: 6px;
+  }
+
+  .emote-bar {
+    right: 6px;
+    bottom: 6px;
+    padding: 3px 5px;
+    gap: 3px;
+  }
+
+  .emote-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
+  }
+
+  /* === BOTTOM ACTION DOCK (ULTRA-CLEAN MOBILE GRID) === */
+  .action-dock {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "left right"
+      "center center";
+    padding: 7px 9px calc(8px + env(safe-area-inset-bottom));
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .dock-left {
+    grid-area: left;
+    display: flex;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .dock-right {
+    grid-area: right;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .dock-center {
+    grid-area: center;
+    gap: 5px;
+    width: 100%;
+  }
+
+  .my-hand-strength {
+    width: 100%;
+    padding: 5px 9px;
+    border-radius: 8px;
+  }
+
+  .my-hand-strength .hand-mini-cards,
+  .my-hand-strength .hand-draws-row,
+  .my-hand-strength .strength-meter {
+    display: none;
+  }
+
+  .strength-label {
+    font-size: 0.56rem;
+  }
+
+  #strength-value {
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .equity-readout {
+    font-size: 0.66rem;
+    margin-top: 0;
+  }
+
+  .my-stack-box {
+    padding: 5px 10px;
+    border-radius: 8px;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  #my-coins-display {
+    font-size: 0.92rem;
+    white-space: nowrap;
+  }
+
+  .turn-header-row {
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .turn-status {
+    font-size: 0.74rem;
+  }
+
+  .pre-action-bar {
+    gap: 4px;
+  }
+
+  .pre-act-chip {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+
+  .controls-row {
+    width: 100%;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .act-btn {
+    flex: 1 1 30%;
+    min-width: 0;
+    padding: 8px 6px;
+    border-radius: 9px;
+  }
+
+  .act-title {
+    font-size: 0.8rem;
+  }
+
+  .act-sub {
+    font-size: 0.64rem;
+  }
+
+  .raise-panel {
+    width: 100%;
+    order: 4;
+    padding: 5px 8px;
+    gap: 4px;
+  }
+
+  .raise-top {
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  #raise-slider {
+    flex: 1;
+    width: auto;
+    min-width: 90px;
+  }
+
+  .quick-bet-row {
+    gap: 4px;
+  }
+
+  .q-btn {
+    padding: 4px 6px;
+    font-size: 0.68rem;
+  }
+
+  /* === SIDE DRAWER & MODALS ON MOBILE === */
+  .side-drawer {
+    width: 100vw;
+    max-width: 340px;
+  }
+
+  .modal-content,
+  .modal-wide {
+    width: 94vw;
+    max-width: 94vw;
+    max-height: 86dvh;
+    overflow-y: auto;
+    padding: 16px 14px;
+    border-radius: 14px;
+  }
+}
+
+/* ---------- EXTRA-COMPACT PHONES (<= 400px: iPhone SE / Android 360px) ---------- */
+@media (max-width: 400px) {
+  .mini-logo {
+    display: none;
+  }
+
+  .poker-table {
+    width: 96vw;
+    height: min(300px, 42dvh);
+    min-height: 195px;
+  }
+
+  .card-slot.empty,
+  .playing-card {
+    width: 37px;
+    height: 53px;
+    padding: 2px 3px;
+  }
+
+  .card-rank {
+    font-size: 0.7rem;
+  }
+
+  .card-center-suit {
+    font-size: 0.98rem;
+  }
+
+  .seat-box {
+    min-width: 72px;
+    max-width: 94px;
+    padding: 3px 5px;
+  }
+
+  .seat-node.is-me .seat-box {
+    min-width: 84px;
+  }
+
+  .playing-card.small {
+    width: 26px;
+    height: 37px;
+  }
+
+  .act-btn {
+    padding: 7px 4px;
+  }
+
+  .act-title {
+    font-size: 0.74rem;
+  }
+
+  .act-sub {
+    display: none;
+  }
+}
+
+/* ---------- MOBILE LANDSCAPE (SHORT SCREENS <= 500px HEIGHT) ---------- */
+@media (max-height: 500px) and (orientation: landscape) {
+  .top-bar {
+    flex-direction: row;
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .top-left,
+  .top-right {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .table-arena {
+    padding: 8px 14px;
+  }
+
+  .poker-table {
+    width: min(680px, 84vw);
+    height: 54dvh;
+    min-height: 165px;
+  }
+
+  .action-dock {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "left center right";
+    padding: 4px 10px;
+    gap: 8px;
+  }
+
+  .my-hand-strength .hand-mini-cards,
+  .my-hand-strength .hand-draws-row,
+  .my-hand-strength .strength-meter,
+  .turn-header-row,
+  .act-sub {
+    display: none;
+  }
+
+  .raise-panel {
+    width: auto;
+    order: 0;
+    flex-direction: row;
+    align-items: center;
+    padding: 3px 6px;
+  }
+
+  .quick-bet-row {
+    display: none;
+  }
+}
