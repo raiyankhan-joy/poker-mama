@@ -127,7 +127,7 @@ function scheduleNextStep(room) {
       if (more || game.allInRunoutPending) {
         scheduleNextStep(room);
       }
-    }, 880);
+    }, 580);
     return;
   }
 
@@ -142,9 +142,9 @@ function scheduleNextStep(room) {
   const currentPlayer = game.players[game.currentTurnIndex];
   if (!currentPlayer) return;
 
-  // 2) AI Bot turn (snappy, smooth pacing)
+  // 2) AI Bot turn (ultra-snappy pacing)
   if (currentPlayer.isBot) {
-    const delay = 380 + crypto.randomInt(0, 260);
+    const delay = 240 + crypto.randomInt(0, 180);
     room.botTimer = setTimeout(() => {
       room.botTimer = null;
       if (!rooms.has(game.roomId)) return;
@@ -469,14 +469,27 @@ const httpServer = http.createServer(async (req, res) => {
       const ext = path.extname(filePath).toLowerCase();
       const mime = MIME_TYPES[ext] || 'application/octet-stream';
       const gz = zlib.gzipSync(raw, { level: 6 });
-      cached = { mtimeMs: stat.mtimeMs, raw, gz, mime };
+      const br = zlib.brotliCompressSync
+        ? zlib.brotliCompressSync(raw, {
+            params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 }
+          })
+        : null;
+      cached = { mtimeMs: stat.mtimeMs, raw, gz, br, mime };
       staticAssetCache.set(filePath, cached);
     }
 
     const isVersioned = /[?&]v=/.test(req.url || '');
     const cacheHeader = isVersioned ? 'public, max-age=86400' : 'no-cache';
-    const acceptsGzip = /\bgzip\b/i.test(req.headers['accept-encoding'] || '');
-    if (acceptsGzip) {
+    const enc = req.headers['accept-encoding'] || '';
+    if (cached.br && /\bbr\b/i.test(enc)) {
+      res.writeHead(200, {
+        'Content-Type': cached.mime,
+        'Content-Encoding': 'br',
+        'Vary': 'Accept-Encoding',
+        'Cache-Control': cacheHeader
+      });
+      res.end(cached.br);
+    } else if (/\bgzip\b/i.test(enc)) {
       res.writeHead(200, {
         'Content-Type': cached.mime,
         'Content-Encoding': 'gzip',

@@ -1106,17 +1106,21 @@
       if (w.bestFive) winningCodes.push(...w.bestFive);
     }
 
-    // Community Cards
-    let commHtml = '';
-    for (let i = 0; i < 5; i++) {
-      if (state.communityCards[i]) {
-        const c = state.communityCards[i];
-        commHtml += createCardHTML(c, false, winningCodes, `h${state.handNumber}-comm-${i}-${c.code}`);
-      } else {
-        commHtml += '<div class="card-slot empty"></div>';
+    // Community Cards (memoized so board never repaints unnecessarily on every bet!)
+    const commSig = `${state.handNumber}|${(state.communityCards || []).map((c) => c.code).join(',')}|${winningCodes.join(',')}`;
+    if (commSig !== communityCardsEl.dataset.sig) {
+      communityCardsEl.dataset.sig = commSig;
+      let commHtml = '';
+      for (let i = 0; i < 5; i++) {
+        if (state.communityCards[i]) {
+          const c = state.communityCards[i];
+          commHtml += createCardHTML(c, false, winningCodes, `h${state.handNumber}-comm-${i}-${c.code}`);
+        } else {
+          commHtml += '<div class="card-slot empty"></div>';
+        }
       }
+      communityCardsEl.innerHTML = commHtml;
     }
-    communityCardsEl.innerHTML = commHtml;
 
     // Rotate players so my seat is bottom-center
     const myIndex = state.players.findIndex((p) => p.id === myId);
