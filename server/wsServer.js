@@ -17,6 +17,7 @@ class WSClient extends EventEmitter {
     this._fragmentLen = 0;
 
     socket.on('data', (chunk) => this._onData(chunk));
+    socket.on('end', () => this._handleClose());
     socket.on('close', () => this._handleClose());
     socket.on('error', () => this._handleClose());
   }
@@ -34,13 +35,17 @@ class WSClient extends EventEmitter {
 
   close() {
     if (this.closed) return;
-    this.closed = true;
     try {
       this._sendFrame(0x8, Buffer.alloc(0));
-      this.socket.end();
     } catch (_) {
       // ignore socket teardown error
     }
+    try {
+      this.socket.destroy();
+    } catch (_) {
+      // ignore socket teardown error
+    }
+    this._handleClose();
   }
 
   _sendFrame(opcode, payload) {
@@ -209,15 +214,20 @@ class WSServer extends EventEmitter {
 
     // Heartbeat to detect stale sockets
     this._interval = setInterval(() => {
-      for (const client of this.clients.values()) {
+      for (const [id, client] of this.clients.entries()) {
+        if (client.closed || client.socket.destroyed) {
+          this.clients.delete(id);
+          continue;
+        }
         if (!client.alive) {
           client.close();
+          this.clients.delete(id);
           continue;
         }
         client.alive = false;
         client.ping();
       }
-    }, 25000);
+    }, 20000);
   }
 
   close() {

@@ -424,15 +424,36 @@
     return str.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8);
   }
 
+  function focusRoomCodeInput(reasonText) {
+    if (roomCodeInput) {
+      roomCodeInput.focus();
+      roomCodeInput.classList.remove('pulse-attention');
+      void roomCodeInput.offsetWidth;
+      roomCodeInput.classList.add('pulse-attention');
+    }
+    showToast(reasonText);
+  }
+
   $('btn-join-room').addEventListener('click', () => {
     const code = extractRoomCode(roomCodeInput.value);
     const name = playerNameInput.value.trim() || 'Player';
     if (!code || code.length < 4) {
-      showToast('Please enter a valid 6-character Room Code.');
+      focusRoomCodeInput('🔒 Enter a valid Room Code to Join!');
       return;
     }
     roomCodeInput.value = code;
     send({ type: 'join_room', roomId: code, playerName: name, avatar: selectedAvatar });
+  });
+
+  $('btn-watch-room')?.addEventListener('click', () => {
+    const code = extractRoomCode(roomCodeInput.value);
+    const name = playerNameInput.value.trim() || 'Spectator';
+    if (!code || code.length < 4) {
+      focusRoomCodeInput('🔒 Enter a valid Room Code to Watch!');
+      return;
+    }
+    roomCodeInput.value = code;
+    send({ type: 'spectate_room', roomId: code, playerName: name });
   });
 
   roomCodeInput?.addEventListener('keydown', (e) => {
@@ -442,7 +463,14 @@
     }
   });
 
-  // Live Public Tables Browser API (supports OPEN tables to Join, LIVE tables to Watch, and instant filter tabs!)
+  // Cleanly close WebSocket on reload / tab close so Online Player count updates immediately
+  window.addEventListener('pagehide', () => {
+    try {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close(1000, 'pagehide');
+    } catch (_) {}
+  });
+
+  // Live Public Tables Browser API (Privacy-Locked: Room Code required to Join or Watch!)
   let liveTableFilter = 'all';
   let lastLiveRoomsData = [];
 
@@ -471,10 +499,10 @@
     if (filtered.length === 0) {
       const msg =
         rooms.length === 0
-          ? 'No active public tables right now.<br/>Create a room or hit <strong>Quick Match</strong> to deal!'
+          ? 'No active tables right now.<br/>Create a room or enter a friend’s <strong>Room Code</strong> above!'
           : liveTableFilter === 'open'
-            ? 'No open tables waiting right now.<br/>Switch to <strong>Live</strong> to watch, or create a new room!'
-            : 'No live hands in progress right now.<br/>Join an <strong>Open</strong> table to start dealing!';
+            ? 'No open tables waiting right now.<br/>Switch to <strong>Live</strong> or create a new room!'
+            : 'No live hands in progress right now.<br/>Create a room or enter a <strong>Room Code</strong> above!';
       listEl.innerHTML = `<div class="empty-tables-msg"><div class="empty-tables-icon">🃏</div><div>${msg}</div></div>`;
       return;
     }
@@ -490,8 +518,8 @@
             ? `<span class="voice-live-tag" title="${r.voiceCount} player(s) in Voice Chat">🎙️ ${r.voiceCount}</span>`
             : '';
         const actionBtn = isLive
-          ? `<button type="button" class="btn btn-watch-violet" data-watch-code="${escapeHtml(r.roomId)}">👁️ Watch</button>`
-          : `<button type="button" class="btn btn-join-emerald" data-join-code="${escapeHtml(r.roomId)}">Join ▸</button>`;
+          ? `<button type="button" class="btn btn-watch-violet" data-require-code="watch">🔒 Watch</button>`
+          : `<button type="button" class="btn btn-join-emerald" data-require-code="join">🔒 Join</button>`;
         const potChip =
           isLive && r.pot > 0 ? `<span class="table-meta-chip pot">Pot 🪙 ${r.pot}</span>` : '';
         const specChip =
@@ -502,7 +530,7 @@
             <div class="live-table-info">
               <div class="table-row-top">
                 <strong class="table-title">${escapeHtml(r.hostName)}'s Table</strong>
-                <button type="button" class="room-code-chip" data-copy-code="${escapeHtml(r.roomId)}" title="Click to copy Room Code">#${escapeHtml(r.roomId)}</button>
+                <span class="room-code-chip locked" title="Room Code required from host">🔒 Code Only</span>
                 ${statusBadge}
                 ${voiceBadge}
               </div>
@@ -520,25 +548,14 @@
       })
       .join('');
 
-    listEl.querySelectorAll('[data-join-code]').forEach((btn) => {
+    listEl.querySelectorAll('[data-require-code]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const name = playerNameInput.value.trim() || 'Player';
-        send({ type: 'join_room', roomId: btn.dataset.joinCode, playerName: name, avatar: selectedAvatar });
-      });
-    });
-    listEl.querySelectorAll('[data-watch-code]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const name = playerNameInput.value.trim() || 'Spectator';
-        send({ type: 'spectate_room', roomId: btn.dataset.watchCode, playerName: name });
-      });
-    });
-    listEl.querySelectorAll('[data-copy-code]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const code = btn.dataset.copyCode;
-        if (roomCodeInput) roomCodeInput.value = code;
-        navigator.clipboard?.writeText(code).catch(() => {});
-        showToast(`📋 Room code ${code} copied!`);
+        const mode = btn.dataset.requireCode;
+        const msg =
+          mode === 'watch'
+            ? '🔒 Enter the Room Code above & click Watch to spectate!'
+            : '🔒 Enter the Room Code above & click Join to sit at this table!';
+        focusRoomCodeInput(msg);
       });
     });
   }
