@@ -218,6 +218,20 @@
                 <span>Starting Coins: <strong id="overlay-starting-coins">100</strong> 🪙</span>
                 <span>Board Fee: <strong>1</strong> 🪙/round</span>
               </div>
+              <div id="host-coins-editor" class="wait-coins-editor hidden">
+                <span class="wait-coins-label">🪙 Change Coins:</span>
+                <div class="wait-coins-presets" id="wait-coins-presets">
+                  <button type="button" class="wait-coin-btn" data-coins="50">50</button>
+                  <button type="button" class="wait-coin-btn active" data-coins="100">100</button>
+                  <button type="button" class="wait-coin-btn" data-coins="250">250</button>
+                  <button type="button" class="wait-coin-btn" data-coins="500">500</button>
+                  <button type="button" class="wait-coin-btn" data-coins="1000">1000</button>
+                </div>
+                <div class="wait-coins-custom">
+                  <input id="wait-custom-coins" type="number" min="10" max="100000" step="10" value="100" placeholder="Custom" />
+                  <button type="button" id="btn-wait-set-coins" class="wait-coin-set-btn">Set</button>
+                </div>
+              </div>
               <div id="host-lobby-controls" class="overlay-actions hidden">
                 <button id="btn-add-bot" class="btn btn-sapphire">+ Add AI Bot</button>
                 <button id="btn-remove-bot" class="btn btn-outline">- Remove Bot</button>

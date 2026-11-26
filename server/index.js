@@ -696,6 +696,35 @@ wss.on('connection', (client) => {
         break;
       }
 
+      case 'update_starting_coins': {
+        const ctx = getSessionContext(client.id);
+        if (!ctx) {
+          client.sendJSON({ type: 'session_expired', message: 'Session refreshed. Please join or create a table.' });
+          return;
+        }
+        if (ctx.room.hostId !== ctx.playerId) {
+          client.sendJSON({ type: 'error', message: 'Only the table host can change starting coins.' });
+          return;
+        }
+        if (ctx.room.game.phase !== PHASES.LOBBY) {
+          client.sendJSON({ type: 'error', message: 'Starting coins can only be changed before the game starts.' });
+          return;
+        }
+        const nextCoins = Math.floor(Number(msg.startingCoins));
+        if (!Number.isFinite(nextCoins) || nextCoins < 10 || nextCoins > 100000) {
+          client.sendJSON({ type: 'error', message: 'Please enter starting coins between 10 and 100,000.' });
+          return;
+        }
+        ctx.room.game.startingCoins = nextCoins;
+        ctx.room.game.players.forEach((p) => {
+          p.coins = nextCoins;
+          p.totalBuyIn = nextCoins;
+        });
+        ctx.room.game.addLog(`🪙 Host set starting coins to ${nextCoins} 🪙.`);
+        broadcastRoomState(ctx.room);
+        break;
+      }
+
       case 'add_bot': {
         const ctx = getSessionContext(client.id);
         if (!ctx) {

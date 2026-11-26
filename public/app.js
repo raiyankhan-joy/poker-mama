@@ -656,6 +656,33 @@
   $('btn-add-bot').addEventListener('click', () => send({ type: 'add_bot' }));
   $('btn-remove-bot').addEventListener('click', () => send({ type: 'remove_bot' }));
   $('btn-start-game').addEventListener('click', () => send({ type: 'start_game' }));
+
+  document.querySelectorAll('#wait-coins-presets .wait-coin-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const amount = Number(btn.dataset.coins);
+      if (amount >= 10) {
+        send({ type: 'update_starting_coins', startingCoins: amount });
+      }
+    });
+  });
+
+  function submitWaitCustomCoins() {
+    const input = $('wait-custom-coins');
+    const amount = Math.floor(Number(input?.value));
+    if (!Number.isFinite(amount) || amount < 10 || amount > 100000) {
+      showToast('⚠️ Enter coins between 10 and 100,000.');
+      return;
+    }
+    send({ type: 'update_starting_coins', startingCoins: amount });
+  }
+
+  $('btn-wait-set-coins')?.addEventListener('click', submitWaitCustomCoins);
+  $('wait-custom-coins')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitWaitCustomCoins();
+    }
+  });
   $('btn-next-hand').addEventListener('click', () => send({ type: 'next_hand' }));
   $('btn-show-cards').addEventListener('click', () => send({ type: 'player_action', action: 'show' }));
   $('btn-rebuy').addEventListener('click', () => send({ type: 'rebuy' }));
@@ -1166,10 +1193,21 @@
       overlayPlayerCount.textContent = `${state.players.length}/${state.maxPlayers}`;
       overlayStartingCoins.textContent = state.startingCoins;
       hostLobbyControls.classList.toggle('hidden', !isHost);
+      $('host-coins-editor')?.classList.toggle('hidden', !isHost);
       nonHostWaitMsg.classList.toggle('hidden', isHost);
       $('btn-start-game').disabled = state.players.length < 2;
       $('btn-add-bot').disabled = state.players.length >= state.maxPlayers;
       $('btn-remove-bot').disabled = !state.players.some((p) => p.isBot);
+
+      if (isHost) {
+        const waitCustomInput = $('wait-custom-coins');
+        if (waitCustomInput && document.activeElement !== waitCustomInput) {
+          waitCustomInput.value = state.startingCoins;
+        }
+        document.querySelectorAll('#wait-coins-presets .wait-coin-btn').forEach((btn) => {
+          btn.classList.toggle('active', Number(btn.dataset.coins) === Number(state.startingCoins));
+        });
+      }
     } else {
       waitingOverlay.classList.add('hidden');
     }
