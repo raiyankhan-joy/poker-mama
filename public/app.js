@@ -414,7 +414,7 @@
       type: 'create_room',
       playerName: name,
       avatar: selectedAvatar,
-      maxPlayers: getSelectedMaxPlayers(),
+      maxPlayers: 22,
       startingCoins: coins,
       useBlinds: Boolean(useBlindsCheckbox?.checked),
       isPublic: true,
@@ -1243,7 +1243,8 @@
     if (state.phase === 'LOBBY') {
       waitingOverlay.classList.remove('hidden');
       overlayRoomCode.textContent = state.roomId;
-      overlayPlayerCount.textContent = `${state.players.length}/${state.maxPlayers}`;
+      overlayPlayerCount.textContent =
+        state.maxPlayers >= 22 ? `${state.players.length} Joined` : `${state.players.length}/${state.maxPlayers}`;
       overlayStartingCoins.textContent = state.startingCoins;
       hostLobbyControls.classList.toggle('hidden', !isHost);
       $('host-coins-editor')?.classList.toggle('hidden', !isHost);
@@ -1253,14 +1254,6 @@
       $('btn-remove-bot').disabled = !state.players.some((p) => p.isBot);
 
       if (isHost) {
-        const waitCustomPlayers = $('wait-custom-players');
-        if (waitCustomPlayers && document.activeElement !== waitCustomPlayers) {
-          waitCustomPlayers.value = state.maxPlayers;
-        }
-        document.querySelectorAll('#wait-players-presets .wait-player-btn').forEach((btn) => {
-          btn.classList.toggle('active', Number(btn.dataset.players) === Number(state.maxPlayers));
-        });
-
         const waitCustomInput = $('wait-custom-coins');
         if (waitCustomInput && document.activeElement !== waitCustomInput) {
           waitCustomInput.value = state.startingCoins;
