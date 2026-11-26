@@ -149,6 +149,7 @@
         seenLogIds.clear();
         gameScreen.classList.add('hidden');
         lobbyScreen.classList.remove('hidden');
+        syncLobbyHistoryUrl();
         showToast(`ℹ️ ${msg.message || 'Session refreshed. Please start or join a table.'}`);
       } else if (msg.type === 'error') {
         pendingAction = false;
@@ -167,17 +168,22 @@
         seenLogIds.clear();
         gameScreen.classList.add('hidden');
         lobbyScreen.classList.remove('hidden');
+        syncLobbyHistoryUrl();
       } else if (msg.type === 'game_state') {
         pendingAction = false;
         hostId = msg.hostId;
         myId = msg.myId;
         isSpectatorMode = Boolean(msg.isSpectator);
+        const wasInLobby = gameScreen.classList.contains('hidden');
         currentState = msg.state;
         if (currentState.serverNow) {
           serverClockOffset = currentState.serverNow - Date.now();
         }
         lobbyScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
+        if (wasInLobby) {
+          pushGameHistoryState(currentState.roomId);
+        }
         renderGameState(currentState);
       } else if (msg.type === 'pong_latency') {
         const rtt = Math.max(1, Date.now() - (Number(msg.ts) || Date.now()));
@@ -2252,6 +2258,42 @@
       }
     }
   }
+
+  // ================= BROWSER BACK BUTTON (SPA HISTORY NAVIGATION) =================
+  let historyInGame = false;
+
+  function pushGameHistoryState(roomId) {
+    try {
+      if (!historyInGame) {
+        history.pushState({ screen: 'game', roomId }, '', `#table-${encodeURIComponent(roomId || '')}`);
+        historyInGame = true;
+      }
+    } catch (_) {}
+  }
+
+  function syncLobbyHistoryUrl() {
+    try {
+      if (historyInGame || window.location.hash.startsWith('#table-')) {
+        historyInGame = false;
+        history.replaceState({ screen: 'lobby' }, '', window.location.pathname);
+      }
+    } catch (_) {}
+  }
+
+  window.addEventListener('popstate', () => {
+    // Pressing browser Back while inside a game table cleanly returns to the Lobby!
+    if (!gameScreen.classList.contains('hidden')) {
+      historyInGame = false;
+      send({ type: 'leave_room' });
+      leaveVoiceChat(false);
+      voicePeersMap.clear();
+      currentState = null;
+      pendingAction = false;
+      gameScreen.classList.add('hidden');
+      lobbyScreen.classList.remove('hidden');
+      showToast('Returned to Lobby');
+    }
+  });
 
   // Live Server Latency (Ping) Monitor every 5 seconds
   setInterval(() => {
