@@ -104,20 +104,18 @@ class PokerSound {
   }
 
   toggleMusic() {
-    this.musicEnabled = !this.musicEnabled;
-    if (this.musicEnabled) {
-      this.startBackgroundMusic();
-    } else {
-      this.stopBackgroundMusic();
-    }
-    return this.musicEnabled;
+    this.musicEnabled = false;
+    this.stopBackgroundMusic();
+    return false;
   }
 
   /**
-   * Soft, warm velvet casino lounge Rhodes chord loop (auto-ducks softly during voice).
+   * Background lounge music disabled.
    */
   startBackgroundMusic() {
-    if (!this.musicEnabled || this._musicPlaying) return;
+    this.musicEnabled = false;
+    this._musicPlaying = false;
+    return;
     const ctx = this._ensureCtx();
     if (!ctx) return;
 

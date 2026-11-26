@@ -45,7 +45,6 @@
   const btnVoiceMute = $('btn-voice-mute');
   const voiceAudioContainer = $('voice-audio-container');
   const btnVoice = $('btn-voice');
-  const btnMusic = $('btn-music');
   const btnSound = $('btn-sound');
 
   // Table
@@ -752,12 +751,6 @@
     btnVoice.textContent = enabled ? '🗣️' : '🔇';
     btnVoice.classList.toggle('muted-off', !enabled);
     if (enabled) window.pokerSound.speak('Dealer voice is on!', true);
-  });
-
-  btnMusic.addEventListener('click', () => {
-    const enabled = window.pokerSound.toggleMusic();
-    btnMusic.textContent = enabled ? '🎵' : '🔇';
-    btnMusic.classList.toggle('muted-off', !enabled);
   });
 
   btnSound.addEventListener('click', () => {
