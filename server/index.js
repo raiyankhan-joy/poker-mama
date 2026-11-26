@@ -508,7 +508,7 @@ function sanitizeAvatar(raw) {
 function createNewRoomForClient(client, opts) {
   leaveCurrentRoom(client);
 
-  const maxPlayers = Math.min(8, Math.max(2, Number(opts.maxPlayers) || 4));
+  const maxPlayers = Math.min(22, Math.max(2, Number(opts.maxPlayers) || 4));
   const startingCoins = Math.max(10, Math.min(100000, Number(opts.startingCoins) || 100));
   const playerName = (opts.playerName || 'Player 1').trim().slice(0, 18) || 'Player 1';
   const fillWithBots = Boolean(opts.fillWithBots);
@@ -531,6 +531,7 @@ function createNewRoomForClient(client, opts) {
   const room = {
     game,
     hostId: playerId,
+    isQuickMatch: Boolean(opts.isQuickMatch),
     clients: new Map([[playerId, client]]),
     spectators: new Map(), // clientId -> { ws, name }
     voicePeers: new Map(), // playerId -> { muted: boolean }
@@ -593,7 +594,7 @@ wss.on('connection', (client) => {
       case 'quick_match': {
         // Smart Matchmaking: find an open public table with matching coins first, else any open public table, else create one!
         const preferredCoins = Math.max(10, Number(msg.startingCoins) || 100);
-        const preferredPlayers = Math.min(8, Math.max(2, Number(msg.maxPlayers) || 4));
+        const preferredPlayers = Math.min(22, Math.max(2, Number(msg.maxPlayers) || 4));
         const playerName = (msg.playerName || 'Player').trim().slice(0, 18) || 'Player';
         const playerAvatar = sanitizeAvatar(msg.avatar);
 
@@ -721,6 +722,38 @@ wss.on('connection', (client) => {
           p.totalBuyIn = nextCoins;
         });
         ctx.room.game.addLog(`🪙 Host set starting coins to ${nextCoins} 🪙.`);
+        broadcastRoomState(ctx.room);
+        break;
+      }
+
+      case 'update_max_players': {
+        const ctx = getSessionContext(client.id);
+        if (!ctx) {
+          client.sendJSON({ type: 'session_expired', message: 'Session refreshed. Please join or create a table.' });
+          return;
+        }
+        if (ctx.room.hostId !== ctx.playerId) {
+          client.sendJSON({ type: 'error', message: 'Only the table host can change max players.' });
+          return;
+        }
+        if (ctx.room.game.phase !== PHASES.LOBBY) {
+          client.sendJSON({ type: 'error', message: 'Max players can only be changed before the game starts.' });
+          return;
+        }
+        const nextMax = Math.floor(Number(msg.maxPlayers));
+        if (!Number.isFinite(nextMax) || nextMax < 2 || nextMax > 22) {
+          client.sendJSON({ type: 'error', message: 'Please enter a player limit between 2 and 22.' });
+          return;
+        }
+        if (nextMax < ctx.room.game.players.length) {
+          client.sendJSON({
+            type: 'error',
+            message: `Cannot set below currently seated players (${ctx.room.game.players.length}).`
+          });
+          return;
+        }
+        ctx.room.game.maxPlayers = nextMax;
+        ctx.room.game.addLog(`👥 Host updated table size to ${nextMax} players.`);
         broadcastRoomState(ctx.room);
         break;
       }

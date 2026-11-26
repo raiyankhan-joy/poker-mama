@@ -348,12 +348,25 @@
     }
   } catch (_) {}
 
+  const customPlayersInput = $('custom-players-input');
+
   document.querySelectorAll('#player-count-selector .sel-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#player-count-selector .sel-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       selectedPlayers = Number(btn.dataset.players);
+      if (customPlayersInput) customPlayersInput.value = selectedPlayers;
     });
+  });
+
+  customPlayersInput?.addEventListener('input', () => {
+    const val = Math.floor(Number(customPlayersInput.value));
+    if (val >= 2 && val <= 22) {
+      selectedPlayers = val;
+      document.querySelectorAll('#player-count-selector .sel-btn').forEach((b) => {
+        b.classList.toggle('active', Number(b.dataset.players) === selectedPlayers);
+      });
+    }
   });
 
   document.querySelectorAll('#coins-preset-selector .sel-btn').forEach((btn) => {
@@ -375,6 +388,11 @@
     }
   });
 
+  function getSelectedMaxPlayers() {
+    const raw = Math.floor(Number(customPlayersInput?.value) || selectedPlayers || 4);
+    return Math.min(22, Math.max(2, raw));
+  }
+
   $('btn-create-solo').addEventListener('click', () => {
     const name = playerNameInput.value.trim() || 'Player 1';
     const coins = Math.max(10, Math.floor(Number(customCoinsInput.value) || selectedCoins));
@@ -382,7 +400,7 @@
       type: 'create_room',
       playerName: name,
       avatar: selectedAvatar,
-      maxPlayers: selectedPlayers,
+      maxPlayers: getSelectedMaxPlayers(),
       startingCoins: coins,
       useBlinds: Boolean(useBlindsCheckbox?.checked),
       fillWithBots: true
@@ -396,7 +414,7 @@
       type: 'create_room',
       playerName: name,
       avatar: selectedAvatar,
-      maxPlayers: selectedPlayers,
+      maxPlayers: getSelectedMaxPlayers(),
       startingCoins: coins,
       useBlinds: Boolean(useBlindsCheckbox?.checked),
       isPublic: true,
@@ -411,7 +429,7 @@
       type: 'quick_match',
       playerName: name,
       avatar: selectedAvatar,
-      maxPlayers: selectedPlayers,
+      maxPlayers: getSelectedMaxPlayers(),
       startingCoins: coins,
       useBlinds: Boolean(useBlindsCheckbox?.checked)
     });
@@ -656,6 +674,33 @@
   $('btn-add-bot').addEventListener('click', () => send({ type: 'add_bot' }));
   $('btn-remove-bot').addEventListener('click', () => send({ type: 'remove_bot' }));
   $('btn-start-game').addEventListener('click', () => send({ type: 'start_game' }));
+
+  document.querySelectorAll('#wait-players-presets .wait-player-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const count = Number(btn.dataset.players);
+      if (count >= 2 && count <= 22) {
+        send({ type: 'update_max_players', maxPlayers: count });
+      }
+    });
+  });
+
+  function submitWaitCustomPlayers() {
+    const input = $('wait-custom-players');
+    const count = Math.floor(Number(input?.value));
+    if (!Number.isFinite(count) || count < 2 || count > 22) {
+      showToast('⚠️ Enter players between 2 and 22.');
+      return;
+    }
+    send({ type: 'update_max_players', maxPlayers: count });
+  }
+
+  $('btn-wait-set-players')?.addEventListener('click', submitWaitCustomPlayers);
+  $('wait-custom-players')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitWaitCustomPlayers();
+    }
+  });
 
   document.querySelectorAll('#wait-coins-presets .wait-coin-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -975,7 +1020,15 @@
         { x: 86, y: 84 }
       ]
     };
-    return layouts[count] || layouts[8];
+    if (layouts[count]) return layouts[count];
+    const dynamic = [];
+    for (let i = 0; i < count; i++) {
+      const angle = Math.PI / 2 + (i * 2 * Math.PI) / count;
+      const x = Math.round((50 + 47 * Math.cos(angle)) * 10) / 10;
+      const y = Math.round((50 + 47 * Math.sin(angle)) * 10) / 10;
+      dynamic.push({ x, y });
+    }
+    return dynamic;
   }
 
   function renderGameState(state) {
@@ -1200,6 +1253,14 @@
       $('btn-remove-bot').disabled = !state.players.some((p) => p.isBot);
 
       if (isHost) {
+        const waitCustomPlayers = $('wait-custom-players');
+        if (waitCustomPlayers && document.activeElement !== waitCustomPlayers) {
+          waitCustomPlayers.value = state.maxPlayers;
+        }
+        document.querySelectorAll('#wait-players-presets .wait-player-btn').forEach((btn) => {
+          btn.classList.toggle('active', Number(btn.dataset.players) === Number(state.maxPlayers));
+        });
+
         const waitCustomInput = $('wait-custom-coins');
         if (waitCustomInput && document.activeElement !== waitCustomInput) {
           waitCustomInput.value = state.startingCoins;

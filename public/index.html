@@ -54,15 +54,18 @@
           </div>
 
           <div class="form-group">
-            <label>Number of Players</label>
+            <label>Number of Players (2 – 22)</label>
             <div class="selector-grid" id="player-count-selector">
               <button type="button" class="sel-btn" data-players="2">2</button>
-              <button type="button" class="sel-btn" data-players="3">3</button>
               <button type="button" class="sel-btn active" data-players="4">4</button>
-              <button type="button" class="sel-btn" data-players="5">5</button>
               <button type="button" class="sel-btn" data-players="6">6</button>
-              <button type="button" class="sel-btn" data-players="7">7</button>
               <button type="button" class="sel-btn" data-players="8">8</button>
+              <button type="button" class="sel-btn" data-players="10">10</button>
+              <button type="button" class="sel-btn" data-players="12">12</button>
+            </div>
+            <div class="custom-coins-row">
+              <span>Custom Players:</span>
+              <input id="custom-players-input" type="number" min="2" max="22" value="4" />
             </div>
           </div>
 
@@ -219,17 +222,34 @@
                 <span>Board Fee: <strong>1</strong> 🪙/round</span>
               </div>
               <div id="host-coins-editor" class="wait-coins-editor hidden">
-                <span class="wait-coins-label">🪙 Change Coins:</span>
-                <div class="wait-coins-presets" id="wait-coins-presets">
-                  <button type="button" class="wait-coin-btn" data-coins="50">50</button>
-                  <button type="button" class="wait-coin-btn active" data-coins="100">100</button>
-                  <button type="button" class="wait-coin-btn" data-coins="250">250</button>
-                  <button type="button" class="wait-coin-btn" data-coins="500">500</button>
-                  <button type="button" class="wait-coin-btn" data-coins="1000">1000</button>
+                <div class="wait-settings-row">
+                  <span class="wait-coins-label">👥 Max Players:</span>
+                  <div class="wait-coins-presets" id="wait-players-presets">
+                    <button type="button" class="wait-coin-btn wait-player-btn" data-players="2">2</button>
+                    <button type="button" class="wait-coin-btn wait-player-btn active" data-players="4">4</button>
+                    <button type="button" class="wait-coin-btn wait-player-btn" data-players="6">6</button>
+                    <button type="button" class="wait-coin-btn wait-player-btn" data-players="8">8</button>
+                    <button type="button" class="wait-coin-btn wait-player-btn" data-players="10">10</button>
+                    <button type="button" class="wait-coin-btn wait-player-btn" data-players="12">12</button>
+                  </div>
+                  <div class="wait-coins-custom">
+                    <input id="wait-custom-players" type="number" min="2" max="22" step="1" value="4" placeholder="2-22" />
+                    <button type="button" id="btn-wait-set-players" class="wait-coin-set-btn">Set</button>
+                  </div>
                 </div>
-                <div class="wait-coins-custom">
-                  <input id="wait-custom-coins" type="number" min="10" max="100000" step="10" value="100" placeholder="Custom" />
-                  <button type="button" id="btn-wait-set-coins" class="wait-coin-set-btn">Set</button>
+                <div class="wait-settings-row">
+                  <span class="wait-coins-label">🪙 Change Coins:</span>
+                  <div class="wait-coins-presets" id="wait-coins-presets">
+                    <button type="button" class="wait-coin-btn" data-coins="50">50</button>
+                    <button type="button" class="wait-coin-btn active" data-coins="100">100</button>
+                    <button type="button" class="wait-coin-btn" data-coins="250">250</button>
+                    <button type="button" class="wait-coin-btn" data-coins="500">500</button>
+                    <button type="button" class="wait-coin-btn" data-coins="1000">1000</button>
+                  </div>
+                  <div class="wait-coins-custom">
+                    <input id="wait-custom-coins" type="number" min="10" max="100000" step="10" value="100" placeholder="Custom" />
+                    <button type="button" id="btn-wait-set-coins" class="wait-coin-set-btn">Set</button>
+                  </div>
                 </div>
               </div>
               <div id="host-lobby-controls" class="overlay-actions hidden">

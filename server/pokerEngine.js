@@ -17,7 +17,7 @@ const PHASES = {
 class PokerGame {
   constructor(roomId, options = {}) {
     this.roomId = roomId;
-    this.maxPlayers = Math.min(8, Math.max(2, Number(options.maxPlayers) || 4));
+    this.maxPlayers = Math.min(22, Math.max(2, Number(options.maxPlayers) || 4));
     this.startingCoins = Math.max(10, Number(options.startingCoins) || 100);
     this.boardFee = 1; // 1 coin board fee (ante) per round
     this.useBlinds = Boolean(options.useBlinds);

@@ -3562,18 +3562,32 @@ html, body {
   }
 }
 
-/* ================= WAITING ROOM HOST COIN SELECTOR ================= */
+/* ================= WAITING ROOM HOST SETTINGS (PLAYERS + COINS) ================= */
 .wait-coins-editor {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
   margin: 10px 0 12px;
-  padding: 9px 12px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(245, 197, 66, 0.24);
   border-radius: 12px;
+}
+
+.wait-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.wait-settings-row + .wait-settings-row {
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .wait-coins-label {
