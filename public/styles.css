@@ -2937,6 +2937,19 @@ html, body {
     -webkit-backdrop-filter: none !important;
   }
 
+  .seat-node.active-turn .seat-box {
+    animation: none !important;
+    box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(245, 197, 66, 0.45) !important;
+  }
+
+  .table-rail {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 0 2px rgba(245, 197, 66, 0.25) !important;
+  }
+
+  .turn-timer-fill {
+    transition: width 0.24s linear;
+  }
+
   /* === LOBBY MOBILE === */
   .lobby-screen {
     padding: 16px 10px calc(24px + env(safe-area-inset-bottom));

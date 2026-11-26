@@ -281,16 +281,17 @@
     }
   }
 
-  // ================= 60 FPS LIVE TURN TIMER LOOP =================
+  // ================= ULTRA-LIGHTWEIGHT 4Hz TURN TIMER (ZERO 60FPS REFLOW LAG!) =================
   let lastRenderedTurnSec = -1;
-  function tickTurnTimer() {
+  setInterval(() => {
+    if (gameScreen.classList.contains('hidden')) return;
     if (currentState && currentState.turnExpiresAt) {
       const now = Date.now() + serverClockOffset;
       const remaining = Math.max(0, currentState.turnExpiresAt - now);
       const pct = Math.min(100, (remaining / (currentState.turnDurationMs || 30000)) * 100);
       const secs = Math.ceil(remaining / 1000);
 
-      const fillEl = document.querySelector('.turn-timer-fill');
+      const fillEl = seatsLayer?.querySelector('.turn-timer-fill');
       if (fillEl) {
         fillEl.style.width = `${pct.toFixed(1)}%`;
         fillEl.classList.toggle('urgent', secs <= 8);
@@ -306,9 +307,7 @@
     } else {
       lastRenderedTurnSec = -1;
     }
-    requestAnimationFrame(tickTurnTimer);
-  }
-  requestAnimationFrame(tickTurnTimer);
+  }, 250);
 
   // ================= LOBBY INTERACTIONS =================
   // Restore saved display name & avatar
@@ -767,8 +766,8 @@
   });
 
   $('btn-stats').addEventListener('click', () => {
-    if (currentState) renderStatsModal(currentState);
     statsModal.classList.remove('hidden');
+    if (currentState) renderStatsModal(currentState);
   });
   $('btn-close-stats').addEventListener('click', () => statsModal.classList.add('hidden'));
   statsModal.addEventListener('click', (e) => {
@@ -1539,6 +1538,7 @@
   }
 
   function renderStatsModal(state) {
+    if (!statsModal || statsModal.classList.contains('hidden')) return;
     const sorted = [...state.players].sort((a, b) => b.coins - a.coins);
     statsTableBody.innerHTML = sorted
       .map((p) => {
@@ -1559,6 +1559,7 @@
   }
 
   function renderFairModal(state) {
+    if (!fairModalBody || !fairModal || fairModal.classList.contains('hidden')) return;
     if (!state.shuffleMeta) {
       fairModalBody.innerHTML = '<p>No hand dealt yet. Start a round to see the CSPRNG commitment hash.</p>';
       return;
@@ -1621,6 +1622,7 @@
     }
   }
 
+  let lastRenderedLogSig = '';
   function renderActionLog(logs) {
     const isInitialBatch = seenLogIds.size === 0;
     const newLogs = [];
@@ -1639,6 +1641,11 @@
       }
     }
 
+    const lastId = logs.length > 0 ? logs[logs.length - 1].id : '';
+    const sig = `${logs.length}:${lastId}`;
+    if (sig === lastRenderedLogSig) return;
+    lastRenderedLogSig = sig;
+
     actionLogList.innerHTML = logs
       .map(
         (item) =>
@@ -1648,10 +1655,14 @@
     actionLogList.scrollTop = actionLogList.scrollHeight;
   }
 
+  let lastRenderedHistoryLen = -1;
   function renderHandHistory(history) {
     const el = $('hand-history-list');
     if (!el) return;
-    if (!history || history.length === 0) {
+    const len = history ? history.length : 0;
+    if (len === lastRenderedHistoryLen) return;
+    lastRenderedHistoryLen = len;
+    if (len === 0) {
       el.innerHTML = '<div class="log-item" style="color:var(--text-muted);">Completed rounds will appear here.</div>';
       return;
     }
