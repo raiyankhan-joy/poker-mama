@@ -144,7 +144,7 @@ function scheduleNextStep(room) {
 
   // 2) AI Bot turn (snappy, smooth pacing)
   if (currentPlayer.isBot) {
-    const delay = 680 + crypto.randomInt(0, 400);
+    const delay = 380 + crypto.randomInt(0, 260);
     room.botTimer = setTimeout(() => {
       room.botTimer = null;
       if (!rooms.has(game.roomId)) return;
@@ -473,19 +473,21 @@ const httpServer = http.createServer(async (req, res) => {
       staticAssetCache.set(filePath, cached);
     }
 
+    const isVersioned = /[?&]v=/.test(req.url || '');
+    const cacheHeader = isVersioned ? 'public, max-age=86400' : 'no-cache';
     const acceptsGzip = /\bgzip\b/i.test(req.headers['accept-encoding'] || '');
     if (acceptsGzip) {
       res.writeHead(200, {
         'Content-Type': cached.mime,
         'Content-Encoding': 'gzip',
         'Vary': 'Accept-Encoding',
-        'Cache-Control': 'no-cache'
+        'Cache-Control': cacheHeader
       });
       res.end(cached.gz);
     } else {
       res.writeHead(200, {
         'Content-Type': cached.mime,
-        'Cache-Control': 'no-cache'
+        'Cache-Control': cacheHeader
       });
       res.end(cached.raw);
     }

@@ -22,12 +22,13 @@ for (const suit of SUITS) {
  * Fast Monte Carlo Equity Calculator (strictly privacy-safe: uses ONLY hero's 2 cards + visible board).
  * Runs unbiased partial Fisher-Yates rollouts against `opponentCount` unknown hands.
  */
-function calculateEquity(holeCards, communityCards, opponentCount = 1, iterations = 220) {
+function calculateEquity(holeCards, communityCards, opponentCount = 1, iterations = 120) {
   if (!holeCards || holeCards.length < 2) {
     return { equityPct: 0, winPct: 0, tiePct: 0 };
   }
 
   const activeOpps = Math.max(1, Math.min(7, Number(opponentCount) || 1));
+  const runs = activeOpps >= 5 ? Math.min(iterations, 65) : activeOpps >= 3 ? Math.min(iterations, 90) : iterations;
   const cardKey = (c) => `${c.rank}_${c.suit}`;
   const knownKeys = new Set([
     ...holeCards.map(cardKey),
@@ -46,7 +47,7 @@ function calculateEquity(holeCards, communityCards, opponentCount = 1, iteration
   let pureWins = 0;
   let ties = 0;
 
-  // Use a single crypto-seeded fast PRNG (xorshift32) for sub-3ms Monte Carlo rollouts
+  // Use a single crypto-seeded fast PRNG (xorshift32) for sub-2ms Monte Carlo rollouts
   let seed = crypto.randomBytes(4).readUInt32LE(0) || 0x9e3779b9;
   const nextRand = (max) => {
     seed ^= seed << 13;
@@ -58,7 +59,7 @@ function calculateEquity(holeCards, communityCards, opponentCount = 1, iteration
   const pool = [...unseen];
   const n = pool.length;
 
-  for (let iter = 0; iter < iterations; iter++) {
+  for (let iter = 0; iter < runs; iter++) {
     // Partial Fisher-Yates for only the cards needed in this rollout
     for (let i = 0; i < cardsNeededPerRun; i++) {
       const j = i + nextRand(n - i);
@@ -102,9 +103,9 @@ function calculateEquity(holeCards, communityCards, opponentCount = 1, iteration
   }
 
   return {
-    equityPct: Math.round((equitySum / iterations) * 100),
-    winPct: Math.round((pureWins / iterations) * 100),
-    tiePct: Math.round((ties / iterations) * 100)
+    equityPct: Math.round((equitySum / runs) * 100),
+    winPct: Math.round((pureWins / runs) * 100),
+    tiePct: Math.round((ties / runs) * 100)
   };
 }
 
