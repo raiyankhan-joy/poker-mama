@@ -3,7 +3,7 @@
 class PokerSound {
   constructor() {
     this.ctx = null;
-    this.muted = false;
+    this.muted = true;
     this.voiceEnabled = false;
     this.musicEnabled = false;
     this._musicPlaying = false;

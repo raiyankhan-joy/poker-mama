@@ -44,7 +44,6 @@
   const btnVoiceChat = $('btn-voice-chat');
   const btnVoiceMute = $('btn-voice-mute');
   const voiceAudioContainer = $('voice-audio-container');
-  const btnSound = $('btn-sound');
 
   // Table
   const displayPot = $('display-pot');
@@ -741,13 +740,6 @@
       if (myId) triggerEmoteBubble(myId, text, true);
       send({ type: 'emote', text });
     });
-  });
-
-  // Voice, Music & Sound toggles
-  btnSound.addEventListener('click', () => {
-    const muted = window.pokerSound.toggleMute();
-    btnSound.textContent = muted ? '🔇' : '🔊';
-    btnSound.classList.toggle('muted-off', muted);
   });
 
   // Modals: Rules, Stats
