@@ -1945,6 +1945,176 @@
     }, 120);
   }
 
+  let rawMicStream = null;
+  let voiceGateTimer = null;
+  let voiceGateNodes = null;
+
+  function tuneOpusSdp(sdp) {
+    if (!sdp || typeof sdp !== 'string') return sdp;
+    try {
+      const lines = sdp.split('\r\n');
+      let opusPayload = null;
+      for (const line of lines) {
+        const m = line.match(/^a=rtpmap:(\d+)\s+opus\/48000/i);
+        if (m) {
+          opusPayload = m[1];
+          break;
+        }
+      }
+      if (!opusPayload) return sdp;
+      const fmtpPrefix = `a=fmtp:${opusPayload} `;
+      const targetParams = 'usedtx=1;useinbandfec=1;stereo=0;sprop-stereo=0;maxaveragebitrate=32000';
+      let found = false;
+      const out = lines.map((line) => {
+        if (line.startsWith(fmtpPrefix)) {
+          found = true;
+          let updated = line;
+          ['usedtx=1', 'useinbandfec=1', 'stereo=0', 'sprop-stereo=0', 'maxaveragebitrate=32000'].forEach((kv) => {
+            const key = kv.split('=')[0];
+            const re = new RegExp(`${key}=[^;\\s]+`, 'i');
+            if (re.test(updated)) updated = updated.replace(re, kv);
+            else updated += `;${kv}`;
+          });
+          return updated;
+        }
+        return line;
+      });
+      if (!found) {
+        const rtpmapIdx = out.findIndex((l) => l.startsWith(`a=rtpmap:${opusPayload} `));
+        if (rtpmapIdx !== -1) out.splice(rtpmapIdx + 1, 0, `${fmtpPrefix}${targetParams}`);
+      }
+      return out.join('\r\n');
+    } catch (_) {
+      return sdp;
+    }
+  }
+
+  function destroyVoiceProcessingChain() {
+    if (voiceGateTimer) {
+      clearInterval(voiceGateTimer);
+      voiceGateTimer = null;
+    }
+    if (voiceGateNodes) {
+      try {
+        voiceGateNodes.source.disconnect();
+        voiceGateNodes.highpass.disconnect();
+        voiceGateNodes.lowpass.disconnect();
+        voiceGateNodes.compressor.disconnect();
+        voiceGateNodes.analyser.disconnect();
+        voiceGateNodes.gateGain.disconnect();
+      } catch (_) {}
+      voiceGateNodes = null;
+    }
+  }
+
+  function buildCleanVoiceStream(rawStream) {
+    try {
+      const ctx = ensureVoiceAudioCtx();
+      if (!ctx || typeof ctx.createMediaStreamDestination !== 'function') {
+        return rawStream;
+      }
+      destroyVoiceProcessingChain();
+
+      const source = ctx.createMediaStreamSource(rawStream);
+
+      // 1) High-pass filter (130 Hz): kills fan rumble, AC hum, table thumps
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 130;
+      highpass.Q.value = 0.85;
+
+      // 2) Low-pass filter (3600 Hz): kills high-frequency hiss & speaker feedback whistle
+      const lowpass = ctx.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.value = 3600;
+      lowpass.Q.value = 0.85;
+
+      // 3) Gentle voice dynamics compressor (smooths shouts without boosting silence)
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value = 18;
+      compressor.ratio.value = 4;
+      compressor.attack.value = 0.005;
+      compressor.release.value = 0.12;
+
+      // 4) Real-time adaptive Voice Activity Noise Gate + Anti-Echo Ducking
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      const timeData = new Float32Array(analyser.fftSize);
+
+      const gateGain = ctx.createGain();
+      gateGain.gain.value = 0.0;
+
+      const dest = ctx.createMediaStreamDestination();
+
+      source.connect(highpass);
+      highpass.connect(lowpass);
+      lowpass.connect(compressor);
+      compressor.connect(analyser);
+      compressor.connect(gateGain);
+      gateGain.connect(dest);
+
+      voiceGateNodes = { source, highpass, lowpass, compressor, analyser, gateGain, dest };
+
+      let noiseFloor = 0.006;
+      let gateOpenUntil = 0;
+      let gateIsOpen = false;
+
+      voiceGateTimer = setInterval(() => {
+        if (!voiceJoined || !voiceGateNodes) return;
+        const now = ctx.currentTime;
+        if (voiceMuted) {
+          if (gateIsOpen) {
+            gateGain.gain.setTargetAtTime(0.0, now, 0.015);
+            gateIsOpen = false;
+          }
+          return;
+        }
+
+        analyser.getFloatTimeDomainData(timeData);
+        let sumSq = 0;
+        for (let i = 0; i < timeData.length; i++) {
+          const v = timeData[i];
+          sumSq += v * v;
+        }
+        const rms = Math.sqrt(sumSq / timeData.length);
+
+        // Check if any remote peer is actively speaking (anti-echo half-duplex guard)
+        let remoteTalking = false;
+        for (const pid of speakingPeers) {
+          if (pid !== myId) {
+            remoteTalking = true;
+            break;
+          }
+        }
+
+        // Slowly adapt ambient room noise floor when quiet
+        if (!gateIsOpen && rms < 0.04) {
+          noiseFloor = noiseFloor * 0.94 + rms * 0.06;
+        }
+
+        const baseThreshold = Math.max(0.018, Math.min(0.055, noiseFloor * 2.5));
+        const openThreshold = remoteTalking ? baseThreshold * 1.55 : baseThreshold;
+        const nowMs = Date.now();
+
+        if (rms >= openThreshold) {
+          gateOpenUntil = nowMs + 260; // smooth 260ms hold so words never clip
+          if (!gateIsOpen) {
+            gateGain.gain.setTargetAtTime(remoteTalking ? 0.72 : 1.0, now, 0.012);
+            gateIsOpen = true;
+          }
+        } else if (gateIsOpen && nowMs > gateOpenUntil) {
+          gateGain.gain.setTargetAtTime(0.0, now, 0.045);
+          gateIsOpen = false;
+        }
+      }, 25);
+
+      return dest.stream;
+    } catch (_) {
+      return rawStream;
+    }
+  }
+
   function createPeerConnection(peerId) {
     // Preserve any ICE candidates that arrived before the SDP offer!
     closePeerConnection(peerId, false);
@@ -1978,7 +2148,7 @@
         audioEl.autoplay = true;
         audioEl.playsInline = true;
         audioEl.muted = false;
-        audioEl.volume = 1.0;
+        audioEl.volume = 0.8; // 80% prevents phone speaker-to-mic acoustic echo loop
         audioEl.dataset.peerId = peerId;
         voiceAudioContainer?.appendChild(audioEl);
         remoteAudioEls.set(peerId, audioEl);
@@ -2037,6 +2207,7 @@
       try {
         const pc = createPeerConnection(peerId);
         const offer = await pc.createOffer();
+        offer.sdp = tuneOpusSdp(offer.sdp);
         await pc.setLocalDescription(offer);
         send({
           type: 'voice_signal',
@@ -2061,6 +2232,7 @@
           await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
           await flushPendingIce(fromId, pc);
           const answer = await pc.createAnswer();
+          answer.sdp = tuneOpusSdp(answer.sdp);
           await pc.setLocalDescription(answer);
           send({
             type: 'voice_signal',
@@ -2110,22 +2282,35 @@
     }
     voiceJoining = true;
     try {
-      localAudioStream = await navigator.mediaDevices.getUserMedia({
+      rawMicStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
           sampleRate: 48000,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: false },
+          googEchoCancellation: true,
+          googNoiseSuppression: true,
+          googAutoGainControl: false,
+          googHighpassFilter: true,
+          googTypingNoiseDetection: true
         },
         video: false
       });
-    } catch (err) {
-      voiceJoining = false;
-      showToast('⚠️ Microphone permission denied. Please allow mic access to use Voice Chat.');
-      return;
+    } catch (_) {
+      try {
+        rawMicStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false },
+          video: false
+        });
+      } catch (err) {
+        voiceJoining = false;
+        showToast('⚠️ Microphone permission denied. Please allow mic access to use Voice Chat.');
+        return;
+      }
     }
 
+    localAudioStream = buildCleanVoiceStream(rawMicStream);
     await loadIceConfig();
 
     voiceJoining = false;
@@ -2135,7 +2320,7 @@
     if (myId) attachSpeakingAnalyser(myId, localAudioStream);
     updateVoiceChatButtons();
     send({ type: 'voice_join' });
-    showToast('🎙️ Connected to Table Voice Chat!');
+    showToast('🎙️ Connected to Table Voice Chat (Noise Filter Active)');
   }
 
   function leaveVoiceChat(notifyServer = true) {
@@ -2153,15 +2338,18 @@
       speakingPollTimer = null;
     }
     speakingPeers.clear();
+    destroyVoiceProcessingChain();
 
-    if (localAudioStream) {
-      for (const track of localAudioStream.getTracks()) {
+    [localAudioStream, rawMicStream].forEach((stream) => {
+      if (!stream) return;
+      for (const track of stream.getTracks()) {
         try {
           track.stop();
         } catch (_) {}
       }
-      localAudioStream = null;
-    }
+    });
+    localAudioStream = null;
+    rawMicStream = null;
 
     if (notifyServer && wasJoined) {
       send({ type: 'voice_leave' });
@@ -2173,9 +2361,12 @@
   function toggleVoiceMute() {
     if (!voiceJoined || !localAudioStream) return;
     voiceMuted = !voiceMuted;
-    for (const track of localAudioStream.getAudioTracks()) {
-      track.enabled = !voiceMuted;
-    }
+    [localAudioStream, rawMicStream].forEach((stream) => {
+      if (!stream) return;
+      for (const track of stream.getAudioTracks()) {
+        track.enabled = !voiceMuted;
+      }
+    });
     if (voiceMuted && myId) speakingPeers.delete(myId);
     updateVoiceChatButtons();
     send({ type: 'voice_mute', muted: voiceMuted });
