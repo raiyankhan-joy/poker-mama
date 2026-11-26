@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POKER MAMA — Real-Life Online Texas Hold'em</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- ================= LOBBY SCREEN ================= -->
+  <section id="lobby-screen" class="lobby-screen">
+    <div class="lobby-bg-glow"></div>
+    <div class="lobby-container">
+      <header class="brand-header">
+        <div class="brand-suits">
+          <span class="suit-gold">♠</span>
+          <span class="suit-red">♥</span>
+          <span class="suit-red">♦</span>
+          <span class="suit-gold">♣</span>
+        </div>
+        <h1>POKER MAMA</h1>
+        <p class="brand-bangla-slogan">খেলি পোকার &bull; রাজের নানী জোকার</p>
+        <p class="brand-subtitle">Live Online Texas Hold'em &bull; Friends, AI &amp; Voice Chat</p>
+      </header>
+
+      <div class="player-name-bar">
+        <label for="player-name-input">Player Name</label>
+        <input id="player-name-input" type="text" maxlength="18" placeholder="Enter your name" value="Player 1" />
+        <div class="avatar-picker" id="avatar-picker" title="Choose Your Table Avatar">
+          <button type="button" class="av-btn active" data-avatar="😎">😎</button>
+          <button type="button" class="av-btn" data-avatar="🦊">🦊</button>
+          <button type="button" class="av-btn" data-avatar="🦁">🦁</button>
+          <button type="button" class="av-btn" data-avatar="🦅">🦅</button>
+          <button type="button" class="av-btn" data-avatar="👑">👑</button>
+          <button type="button" class="av-btn" data-avatar="🐉">🐉</button>
+          <button type="button" class="av-btn" data-avatar="🎩">🎩</button>
+          <button type="button" class="av-btn" data-avatar="💎">💎</button>
+        </div>
+        <div id="lobby-profile-pill" class="profile-pill" title="Your Casino Rank & XP">
+          <span id="profile-tier-text">🥉 Bronze &bull; Lv 1</span>
+          <div class="xp-bar-mini"><div id="profile-xp-fill" class="xp-fill-mini" style="width: 0%"></div></div>
+        </div>
+      </div>
+
+      <div class="lobby-grid">
+        <!-- Create New Table Card -->
+        <div class="lobby-card">
+          <div class="card-header">
+            <h2>♠ Create New Table</h2>
+            <span class="fee-pill">1 🪙 / Round</span>
+          </div>
+
+          <div class="form-group">
+            <label>Number of Players</label>
+            <div class="selector-grid" id="player-count-selector">
+              <button type="button" class="sel-btn" data-players="2">2</button>
+              <button type="button" class="sel-btn" data-players="3">3</button>
+              <button type="button" class="sel-btn active" data-players="4">4</button>
+              <button type="button" class="sel-btn" data-players="5">5</button>
+              <button type="button" class="sel-btn" data-players="6">6</button>
+              <button type="button" class="sel-btn" data-players="7">7</button>
+              <button type="button" class="sel-btn" data-players="8">8</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Starting Coins per Player</label>
+            <div class="selector-grid coins-grid" id="coins-preset-selector">
+              <button type="button" class="sel-btn" data-coins="50">50</button>
+              <button type="button" class="sel-btn active" data-coins="100">100</button>
+              <button type="button" class="sel-btn" data-coins="250">250</button>
+              <button type="button" class="sel-btn" data-coins="500">500</button>
+              <button type="button" class="sel-btn" data-coins="1000">1000</button>
+            </div>
+            <div class="custom-coins-row">
+              <span>Custom Coins:</span>
+              <input id="custom-coins-input" type="number" min="10" max="100000" value="100" />
+            </div>
+          </div>
+
+          <div class="lobby-cta-stack">
+            <button id="btn-create-solo" class="btn btn-gold btn-lg">
+              <span>🤖</span> Play vs AI Bots
+            </button>
+            <div class="create-actions">
+              <button id="btn-create-online" class="btn btn-emerald btn-lg">
+                <span>🌐</span> Create Room
+              </button>
+              <button id="btn-quick-match" class="btn btn-sapphire btn-lg">
+                <span>⚡</span> Quick Match
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Join Online Room + Live Tables Card -->
+        <div class="lobby-card join-card">
+          <div class="card-header">
+            <h2>🌐 Live Tables &amp; Join</h2>
+            <button id="btn-global-leaderboard" class="icon-btn ranks-btn" title="Global Leaderboard">🏆 Ranks</button>
+          </div>
+
+          <div class="join-inline-row">
+            <input id="room-code-input" class="room-code-input" type="text" maxlength="120" placeholder="ENTER ROOM CODE" />
+            <button id="btn-join-room" class="btn btn-gold">Join</button>
+          </div>
+
+          <div class="live-tables-section">
+            <div class="live-tables-header">
+              <span class="online-pill" id="lobby-online-pill">● Live Public Tables</span>
+              <button id="btn-refresh-rooms" class="q-btn" style="flex:none; padding:5px 12px;">🔄 Refresh</button>
+            </div>
+            <div id="live-tables-list" class="live-tables-list">
+              <div class="empty-tables-msg">
+                <div class="empty-tables-icon">🃏</div>
+                <div>No active public tables right now.<br/>Create a room or hit <strong>Quick Match</strong> to deal!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GAME TABLE SCREEN ================= -->
+  <section id="game-screen" class="game-screen hidden">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="top-left">
+        <div class="mini-logo">♠ POKER MAMA</div>
+        <div class="room-badge" id="room-badge" title="Click to copy Invite Link">
+          <span>ROOM:</span>
+          <strong id="display-room-code">------</strong>
+          <span class="copy-icon">📋</span>
+        </div>
+        <div class="meta-pill">Round <strong id="display-round">0</strong></div>
+        <div class="meta-pill phase-pill" id="display-phase">LOBBY</div>
+        <div class="meta-pill hidden" id="spectator-pill" title="Live Spectators Watching">👁️ <strong id="display-spectators">0</strong></div>
+      </div>
+
+      <div class="top-right">
+        <button id="btn-stats" class="icon-btn" title="Table Leaderboard & Stats">📊 Stats</button>
+        <button id="btn-loan-modal" class="icon-btn loan-btn" title="Request Coins, Negotiate Loans & View Ledger">🤝 Loan</button>
+        <button id="btn-end-game" class="icon-btn end-game-btn" title="Propose Ending Game & Calculating Final Result">🏁 End Game</button>
+        <button id="btn-theme" class="icon-btn" title="Switch Casino Table Theme">🎨</button>
+        <button id="btn-voice-chat" class="icon-btn voice-chat-btn" title="Join Live Online Voice Chat with Table Players">🎙️ Voice Chat</button>
+        <button id="btn-voice-mute" class="icon-btn voice-mute-btn hidden" title="Mute / Unmute Your Microphone">🎤 Mic On</button>
+        <button id="btn-rules" class="icon-btn" title="Poker Hand Rankings">📖</button>
+        <button id="btn-voice" class="icon-btn" title="Toggle Dealer Voice">🗣️</button>
+        <button id="btn-music" class="icon-btn muted-off" title="Toggle Lounge Music (Off)">🔇</button>
+        <button id="btn-sound" class="icon-btn" title="Toggle Sound Effects">🔊</button>
+        <button id="btn-toggle-drawer" class="icon-btn" title="Table Log & Chat">💬</button>
+        <button id="btn-leave" class="icon-btn danger" title="Leave Table">Leave</button>
+      </div>
+    </header>
+    <div id="voice-audio-container" class="sr-audio-host" aria-hidden="true"></div>
+
+    <!-- Main Poker Table Arena -->
+    <main class="table-arena">
+      <!-- Live Unanimous End-Game Vote Banner -->
+      <div id="end-game-vote-banner" class="table-float-banner vote-banner hidden"></div>
+      <!-- Live Incoming Loan / Counter-Offer Negotiation Banner -->
+      <div id="loan-alert-banner" class="table-float-banner loan-banner hidden"></div>
+
+      <div class="poker-table">
+        <div class="table-rail"></div>
+        <div class="table-felt">
+          <div class="felt-inner-ring"></div>
+          <div class="felt-watermark">POKER MAMA &bull; TEXAS HOLD'EM</div>
+
+          <!-- Center Pot & Community Cards -->
+          <div class="table-center">
+            <div class="pot-cluster">
+              <div class="pot-display">
+                <span class="pot-label">TOTAL POT</span>
+                <div class="pot-value">
+                  <span class="chip-dot gold"></span>
+                  <span id="display-pot">0</span>
+                </div>
+                <div class="current-bet-tag" id="display-current-bet">Current Bet: 0</div>
+              </div>
+              <div id="side-pots-bar" class="side-pots-bar hidden"></div>
+            </div>
+
+            <div class="community-cards" id="community-cards">
+              <div class="card-slot empty"></div>
+              <div class="card-slot empty"></div>
+              <div class="card-slot empty"></div>
+              <div class="card-slot empty"></div>
+              <div class="card-slot empty"></div>
+            </div>
+          </div>
+
+          <!-- Waiting Room Overlay (Shown in LOBBY phase) -->
+          <div id="waiting-overlay" class="table-overlay hidden">
+            <div class="overlay-box">
+              <h3>Waiting for Players...</h3>
+              <p>
+                Share Room Code <strong id="overlay-room-code" class="highlight-code">------</strong>
+                <button type="button" id="btn-copy-invite" class="q-btn" style="margin-left:6px; padding:3px 10px;">🔗 Copy Invite Link</button>
+              </p>
+              <div class="overlay-stats">
+                <span>Players: <strong id="overlay-player-count">1/4</strong></span>
+                <span>Starting Coins: <strong id="overlay-starting-coins">100</strong> 🪙</span>
+                <span>Board Fee: <strong>1</strong> 🪙/round</span>
+              </div>
+              <div id="host-lobby-controls" class="overlay-actions hidden">
+                <button id="btn-add-bot" class="btn btn-sapphire">+ Add AI Bot</button>
+                <button id="btn-remove-bot" class="btn btn-outline">- Remove Bot</button>
+                <button id="btn-start-game" class="btn btn-gold">▶ Start Poker Game</button>
+              </div>
+              <p id="non-host-wait-msg" class="wait-msg hidden">Waiting for the table host to start the game...</p>
+            </div>
+          </div>
+
+          <!-- Showdown / Winner Overlay -->
+          <div id="showdown-banner" class="showdown-banner hidden">
+            <div class="showdown-content">
+              <div class="winner-title" id="winner-title">🏆 Winner!</div>
+              <div class="winner-detail" id="winner-detail">Full House</div>
+              <div class="showdown-actions">
+                <button id="btn-show-cards" class="btn btn-purple hidden">👁 Show My Cards</button>
+                <button id="btn-rebuy" class="btn btn-emerald hidden">🪙 Rebuy Chips</button>
+                <button id="btn-next-hand" class="btn btn-gold">Next Round (1 🪙 Fee) →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Game Over Champion & Final Settlement Overlay -->
+          <div id="gameover-overlay" class="table-overlay hidden">
+            <div class="overlay-box champion-box settlement-box">
+              <div class="trophy-icon">🏆</div>
+              <h3 id="champion-name">Final Settlement!</h3>
+              <p id="champion-coins">All loans &amp; coins calculated</p>
+              <div id="final-settlement-wrap" class="final-settlement-wrap"></div>
+              <div class="overlay-actions">
+                <button id="btn-gameover-rebuy" class="btn btn-emerald hidden">🪙 Rebuy &amp; Continue</button>
+                <button id="btn-restart-game" class="btn btn-gold hidden">🔄 Play Again</button>
+                <button id="btn-gameover-leave" class="btn btn-outline">Back to Lobby</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Seats Container (positioned around the oval table) -->
+        <div id="seats-layer" class="seats-layer"></div>
+      </div>
+
+      <!-- Quick Emotes Floating Bar -->
+      <div class="emote-bar" title="Send Table Reaction">
+        <button class="emote-btn" data-emote="👏 Nice Hand">👏</button>
+        <button class="emote-btn" data-emote="🔥 Let's Go!">🔥</button>
+        <button class="emote-btn" data-emote="😎 Bluff?">😎</button>
+        <button class="emote-btn" data-emote="😂 GG">😂</button>
+        <button class="emote-btn" data-emote="🤔 Hmm...">🤔</button>
+      </div>
+      <div id="confetti-layer" class="confetti-layer"></div>
+    </main>
+
+    <!-- Bottom Betting Controls Dock -->
+    <footer class="action-dock">
+      <div class="dock-left">
+        <div class="my-hand-strength" id="my-hand-strength">
+          <div class="hand-hud-header">
+            <span class="strength-label">YOUR HAND</span>
+            <span id="hand-rank-pill" class="hand-rank-pill hidden">Rank #—/10</span>
+          </div>
+          <strong id="strength-value">—</strong>
+          <div id="hand-mini-cards" class="hand-mini-cards"></div>
+          <div id="hand-draws-row" class="hand-draws-row hidden"></div>
+          <div class="equity-readout" id="equity-readout">Win: —</div>
+          <div class="strength-meter">
+            <div id="strength-bar-fill" class="strength-bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dock-center" id="betting-controls">
+        <div class="turn-header-row">
+          <div class="turn-status" id="turn-status-text">Waiting for round...</div>
+          <div id="pre-action-bar" class="pre-action-bar hidden">
+            <label class="pre-act-chip"><input type="checkbox" id="pre-check-fold" /> Auto Check/Fold</label>
+            <label class="pre-act-chip"><input type="checkbox" id="pre-call-any" /> Auto Call</label>
+          </div>
+        </div>
+
+        <div class="controls-row" id="action-buttons-row">
+          <button id="btn-fold" class="act-btn act-fold" disabled title="Shortcut: F">
+            <span class="act-title">FOLD</span>
+            <span class="act-sub">Surrender [F]</span>
+          </button>
+
+          <button id="btn-check-call" class="act-btn act-call" disabled title="Shortcut: C">
+            <span class="act-title" id="check-call-title">CHECK</span>
+            <span class="act-sub" id="check-call-sub">0 Coins [C]</span>
+          </button>
+
+          <div class="raise-panel" id="raise-panel">
+            <div class="raise-top">
+              <button type="button" id="btn-raise-minus" class="step-btn" title="Decrease by 1" disabled>−</button>
+              <input id="raise-slider" type="range" min="1" max="100" step="1" value="1" disabled />
+              <button type="button" id="btn-raise-plus" class="step-btn" title="Increase by 1" disabled>+</button>
+              <div class="raise-amount-box">
+                <span>🪙</span>
+                <input id="raise-number" type="number" min="1" max="100" step="1" value="1" disabled />
+              </div>
+            </div>
+            <div class="quick-bets">
+              <button type="button" class="q-btn" data-q="+1" disabled>+1</button>
+              <button type="button" class="q-btn" data-q="+2" disabled>+2</button>
+              <button type="button" class="q-btn" data-q="+3" disabled>+3</button>
+              <button type="button" class="q-btn" id="btn-quick-max" data-q="max" disabled>Max</button>
+            </div>
+          </div>
+
+          <button id="btn-raise" class="act-btn act-raise" disabled title="Shortcut: R">
+            <span class="act-title" id="raise-btn-title">RAISE</span>
+            <span class="act-sub" id="raise-btn-sub">To 1 [R]</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dock-right">
+        <div class="my-stack-box">
+          <span class="strength-label">YOUR COINS</span>
+          <strong id="my-coins-display">🪙 0</strong>
+          <span id="my-net-display" class="net-tag">Net: 0</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Side Drawer: Live Log, History & Chat -->
+    <aside id="side-drawer" class="side-drawer closed">
+      <div class="drawer-header">
+        <div class="drawer-tabs">
+          <button class="d-tab active" data-tab="log">Log</button>
+          <button class="d-tab" data-tab="history">History</button>
+          <button class="d-tab" data-tab="chat">Chat</button>
+        </div>
+        <button id="btn-close-drawer" class="close-x">✕</button>
+      </div>
+
+      <div id="tab-log" class="drawer-body">
+        <div id="action-log-list" class="log-list"></div>
+      </div>
+
+      <div id="tab-history" class="drawer-body hidden">
+        <div id="hand-history-list" class="log-list"></div>
+      </div>
+
+      <div id="tab-chat" class="drawer-body hidden">
+        <div id="chat-messages" class="chat-list"></div>
+        <div class="quick-chat-bar" id="quick-chat-bar">
+          <button type="button" class="qc-btn" data-msg="GG! 👏">GG! 👏</button>
+          <button type="button" class="qc-btn" data-msg="Nice bluff 😎">Nice bluff 😎</button>
+          <button type="button" class="qc-btn" data-msg="Let's go! 🔥">Let's go! 🔥</button>
+          <button type="button" class="qc-btn" data-msg="Lucky river 😂">Lucky 😂</button>
+        </div>
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" type="text" maxlength="140" placeholder="Type a message..." autocomplete="off" />
+          <button type="submit" class="btn btn-gold">Send</button>
+        </form>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Poker Hand Rankings Modal -->
+  <div id="rules-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>♠ Poker Hand Rankings (Highest to Lowest)</h3>
+        <button id="btn-close-rules" class="close-x">✕</button>
+      </div>
+      <ol class="rankings-list">
+        <li><strong>Royal Flush</strong> — A, K, Q, J, 10 of the same suit</li>
+        <li><strong>Straight Flush</strong> — Five consecutive cards of the same suit</li>
+        <li><strong>Four of a Kind</strong> — Four cards of the same rank</li>
+        <li><strong>Full House</strong> — Three of a kind + a pair</li>
+        <li><strong>Flush</strong> — Any five cards of the same suit</li>
+        <li><strong>Straight</strong> — Five consecutive cards of mixed suits</li>
+        <li><strong>Three of a Kind</strong> — Three cards of the same rank</li>
+        <li><strong>Two Pair</strong> — Two different pairs</li>
+        <li><strong>One Pair</strong> — Two cards of the same rank</li>
+        <li><strong>High Card</strong> — Highest card when no other hand is made</li>
+      </ol>
+      <div class="rules-note">
+        <strong>Keyboard Shortcuts:</strong> <code>F</code> = Fold &bull; <code>C</code> = Check/Call &bull; <code>R</code> = Raise &bull; <code>Enter</code> = Next Round.
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Stats / Leaderboard Modal -->
+  <div id="stats-modal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h3>📊 Live Table Leaderboard &amp; Stats</h3>
+        <button id="btn-close-stats" class="close-x">✕</button>
+      </div>
+      <div class="stats-table-wrap">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Coins</th>
+              <th>Net P/L</th>
+              <th>Hands</th>
+              <th>Wins</th>
+              <th>Biggest Pot</th>
+            </tr>
+          </thead>
+          <tbody id="stats-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Persistent Leaderboard Modal -->
+  <div id="leaderboard-modal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h3>🏆 Global All-Time Leaderboard</h3>
+        <button id="btn-close-leaderboard" class="close-x">✕</button>
+      </div>
+      <div class="stats-table-wrap">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th>Total Won</th>
+              <th>Wins / Hands</th>
+              <th>Win Rate</th>
+              <th>Biggest Pot</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coin Loan & Negotiation Modal -->
+  <div id="loan-modal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h3>🤝 Coin Loan, Negotiation &amp; Ledger</h3>
+        <button id="btn-close-loan" class="close-x">✕</button>
+      </div>
+      <div class="loan-modal-body">
+        <div class="loan-section">
+          <div class="loan-section-title">Request Coins from a Player</div>
+          <form id="loan-request-form" class="loan-form">
+            <select id="loan-lender-select" class="loan-input" required></select>
+            <input id="loan-amount-input" class="loan-input loan-amt-input" type="number" min="1" max="100000" value="20" placeholder="Coins" required />
+            <div class="loan-quick-chips">
+              <button type="button" class="q-btn loan-q" data-lamt="10">10</button>
+              <button type="button" class="q-btn loan-q" data-lamt="20">20</button>
+              <button type="button" class="q-btn loan-q" data-lamt="50">50</button>
+            </div>
+            <input id="loan-note-input" class="loan-input" type="text" maxlength="60" placeholder="Optional note (e.g. Last hand!)" />
+            <button type="submit" class="btn btn-gold">🤝 Send Request</button>
+          </form>
+        </div>
+
+        <div class="loan-section">
+          <div class="loan-section-title">Active Requests &amp; Negotiations</div>
+          <div id="loan-active-list" class="loan-list">
+            <div class="loan-empty">No active loan negotiations right now.</div>
+          </div>
+        </div>
+
+        <div class="loan-section">
+          <div class="loan-section-title">Completed Loans Ledger (Settled at Game End)</div>
+          <div id="loan-ledger-list" class="loan-list">
+            <div class="loan-empty">No completed loans yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="sound.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

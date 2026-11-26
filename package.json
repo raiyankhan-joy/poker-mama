@@ -1,0 +1,13 @@
+{
+  "name": "pooker-online",
+  "version": "1.0.0",
+  "description": "Real-life Online Texas Hold'em Poker game with CSPRNG Fisher-Yates shuffling",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node tests/poker.test.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
