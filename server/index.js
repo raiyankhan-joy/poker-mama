@@ -127,7 +127,7 @@ function scheduleNextStep(room) {
       if (more || game.allInRunoutPending) {
         scheduleNextStep(room);
       }
-    }, 580);
+    }, 950);
     return;
   }
 
@@ -142,9 +142,9 @@ function scheduleNextStep(room) {
   const currentPlayer = game.players[game.currentTurnIndex];
   if (!currentPlayer) return;
 
-  // 2) AI Bot turn (ultra-snappy pacing)
+  // 2) AI Bot turn (natural, comfortable human-like pacing)
   if (currentPlayer.isBot) {
-    const delay = 240 + crypto.randomInt(0, 180);
+    const delay = 850 + crypto.randomInt(0, 550);
     room.botTimer = setTimeout(() => {
       room.botTimer = null;
       if (!rooms.has(game.roomId)) return;
@@ -280,7 +280,9 @@ function readJsonBody(req, maxBytes = 32768) {
 const DEFAULT_STUN_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun.cloudflare.com:3478' }
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'stun:global.stun.twilio.com:3478' }
 ];
 let cachedIceServers = null;
 let cachedIceExpiresAt = 0;

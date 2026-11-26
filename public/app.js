@@ -1933,54 +1933,16 @@
     }, 120);
   }
 
-  function tuneOpusSdp(sdp) {
-    if (!sdp || typeof sdp !== 'string') return sdp;
-    try {
-      const lines = sdp.split('\r\n');
-      let opusPayload = null;
-      for (const line of lines) {
-        const m = line.match(/^a=rtpmap:(\d+)\s+opus\/48000/i);
-        if (m) {
-          opusPayload = m[1];
-          break;
-        }
+  let turnRelayActive = false;
+
+  function unlockRemoteVoicePlayback() {
+    for (const audioEl of remoteAudioEls.values()) {
+      if (audioEl && audioEl.paused && audioEl.srcObject) {
+        audioEl.play().catch(() => {});
       }
-      if (!opusPayload) return sdp;
-      const fmtpPrefix = `a=fmtp:${opusPayload} `;
-      // 16kHz wideband voice + DTX (silence suppression) + FEC eliminates hiss & saves bandwidth
-      const params = [
-        'usedtx=1',
-        'useinbandfec=1',
-        'stereo=0',
-        'sprop-stereo=0',
-        'maxplaybackrate=16000',
-        'sprop-maxcapturerate=16000',
-        'maxaveragebitrate=24000'
-      ];
-      let found = false;
-      const out = lines.map((line) => {
-        if (line.startsWith(fmtpPrefix)) {
-          found = true;
-          let updated = line;
-          params.forEach((kv) => {
-            const key = kv.split('=')[0];
-            const re = new RegExp(`${key}=[^;\\s]+`, 'i');
-            if (re.test(updated)) updated = updated.replace(re, kv);
-            else updated += `;${kv}`;
-          });
-          return updated;
-        }
-        return line;
-      });
-      if (!found) {
-        const rtpmapIdx = out.findIndex((l) => l.startsWith(`a=rtpmap:${opusPayload} `));
-        if (rtpmapIdx !== -1) out.splice(rtpmapIdx + 1, 0, `${fmtpPrefix}${params.join(';')}`);
-      }
-      return out.join('\r\n');
-    } catch (_) {
-      return sdp;
     }
   }
+  document.addEventListener('pointerdown', unlockRemoteVoicePlayback, { passive: true });
 
   function createPeerConnection(peerId) {
     // Preserve any ICE candidates that arrived before the SDP offer!
@@ -2015,7 +1977,7 @@
         audioEl.autoplay = true;
         audioEl.playsInline = true;
         audioEl.muted = false;
-        audioEl.volume = 0.72; // Optimal speakerphone level so hardware AEC cancels 100% echo
+        audioEl.volume = 0.78;
         audioEl.dataset.peerId = peerId;
         voiceAudioContainer?.appendChild(audioEl);
         remoteAudioEls.set(peerId, audioEl);
@@ -2026,7 +1988,14 @@
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      if (pc.connectionState === 'connected') {
+        unlockRemoteVoicePlayback();
+      } else if (pc.connectionState === 'failed') {
+        if (!turnRelayActive) {
+          showToast('⚠️ Voice blocked by mobile NAT/firewall. Add free Metered TURN key on Render!');
+        }
+        closePeerConnection(peerId, true);
+      } else if (pc.connectionState === 'closed') {
         closePeerConnection(peerId, true);
       }
     };
@@ -2073,15 +2042,16 @@
       if (peerId === myId) continue;
       try {
         const pc = createPeerConnection(peerId);
-        const offer = await pc.createOffer();
-        offer.sdp = tuneOpusSdp(offer.sdp);
+        const offer = await pc.createOffer({ offerToReceiveAudio: true });
         await pc.setLocalDescription(offer);
         send({
           type: 'voice_signal',
           targetId: peerId,
           data: { sdp: pc.localDescription }
         });
-      } catch (_) {}
+      } catch (err) {
+        console.warn('Voice offer error:', err);
+      }
     }
   }
 
@@ -2099,7 +2069,6 @@
           await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
           await flushPendingIce(fromId, pc);
           const answer = await pc.createAnswer();
-          answer.sdp = tuneOpusSdp(answer.sdp);
           await pc.setLocalDescription(answer);
           send({
             type: 'voice_signal',
@@ -2122,8 +2091,8 @@
           pendingIceCandidates.get(fromId).push(data.candidate);
         }
       }
-    } catch (_) {
-      // Ignore transient WebRTC negotiation errors
+    } catch (err) {
+      console.warn('Voice signal error:', err);
     }
   }
 
@@ -2134,6 +2103,7 @@
       const cfg = await resp.json();
       if (cfg && Array.isArray(cfg.iceServers) && cfg.iceServers.length > 0) {
         RTC_CONFIG.iceServers = cfg.iceServers;
+        turnRelayActive = Boolean(cfg.turnActive);
       }
     } catch (_) {
       // Keep default STUN servers on fallback
