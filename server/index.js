@@ -220,7 +220,7 @@ function getPublicRoomsList() {
 
     const host = g.players.find((p) => p.id === room.hostId);
     list.push({
-      roomId,
+      codeRequired: true,
       status: isOpen ? 'OPEN' : 'LIVE',
       hostName: host ? host.name : 'Host',
       hostAvatar: host && host.avatar ? host.avatar : '🕶️',
@@ -389,9 +389,17 @@ const httpServer = http.createServer(async (req, res) => {
 
   // 2) Live Public Tables API (for Online Browser & Matchmaking)
   if (urlPath === '/api/rooms' && method === 'GET') {
+    let activeOnline = 0;
+    for (const [id, c] of wss.clients.entries()) {
+      if (c.closed || c.socket.destroyed) {
+        wss.clients.delete(id);
+      } else {
+        activeOnline += 1;
+      }
+    }
     return sendJSON(res, 200, {
       rooms: getPublicRoomsList(),
-      onlinePlayers: wss.clients.size
+      onlinePlayers: activeOnline
     });
   }
 
