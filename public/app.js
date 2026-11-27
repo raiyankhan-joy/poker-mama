@@ -1865,6 +1865,12 @@
     voicePeersMap.clear();
     for (const p of peers) {
       voicePeersMap.set(p.id, { muted: Boolean(p.muted) });
+      if (voiceJoined && p.id && p.id !== myId) {
+        const pc = peerConnections.get(p.id);
+        if (!pc || pc.connectionState !== 'connected') {
+          scheduleRelayFallback(p.id);
+        }
+      }
     }
     updateVoiceChatButtons();
     if (currentState) renderGameState(currentState);
@@ -1968,7 +1974,7 @@
     }
 
     const rms = Math.sqrt(sumSq / outLen);
-    if (rms < 0.014) return null; // Noise gate: send 0 bytes when quiet!
+    if (rms < 0.004) return null; // Ultra-sensitive gate: transmits even soft speech, silences dead air
 
     let bin = '';
     for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
@@ -1994,6 +2000,7 @@
     try {
       const ctx = ensureVoiceAudioCtx();
       if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
       const source = ctx.createMediaStreamSource(stream);
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       const silentGain = ctx.createGain();
