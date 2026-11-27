@@ -211,11 +211,16 @@
       } else if (msg.type === 'voice_joined') {
         handleVoiceJoined(msg.peers || []);
       } else if (msg.type === 'voice_user_joined') {
+        if (voiceJoined && msg.playerId && msg.playerId !== myId) {
+          scheduleRelayFallback(msg.playerId);
+        }
         showToast(`🎙️ ${msg.name || 'Player'} joined Voice Chat`);
       } else if (msg.type === 'voice_user_left') {
         closePeerConnection(msg.playerId);
       } else if (msg.type === 'voice_signal') {
         handleVoiceSignal(msg.fromId, msg.data);
+      } else if (msg.type === 'voice_audio') {
+        handleRelayVoiceAudio(msg.fromId, msg.sr, msg.d);
       } else if (msg.type === 'loan_notify') {
         window.pokerSound?.playEmote();
         showToast(msg.message);
@@ -1934,8 +1939,168 @@
   }
 
   let turnRelayActive = false;
+  const peerRelayNeeded = new Set(); // peerIds whose WebRTC P2P is not connected -> use WS Voice Relay!
+  const peerRelayTimers = new Map(); // peerId -> fallback timeout
+  const relayPlayHeads = new Map(); // peerId -> next AudioContext playback time
+  const relaySpeakingTimers = new Map(); // peerId -> glow timeout
+  let relayCaptureNodes = null;
+
+  function encodeMuLawBase64(floatSamples, inRate, outRate = 12000) {
+    const ratio = Math.max(1, inRate / outRate);
+    const outLen = Math.floor(floatSamples.length / ratio);
+    if (outLen <= 0) return null;
+    const bytes = new Uint8Array(outLen);
+    const MU = 255;
+    const LOG_1_MU = Math.log(1 + MU);
+    let sumSq = 0;
+
+    for (let i = 0; i < outLen; i++) {
+      const start = Math.floor(i * ratio);
+      const end = Math.min(floatSamples.length, Math.floor((i + 1) * ratio));
+      let acc = 0;
+      const count = Math.max(1, end - start);
+      for (let j = start; j < end; j++) acc += floatSamples[j];
+      const x = Math.max(-1, Math.min(1, acc / count));
+      sumSq += x * x;
+      const sign = x < 0 ? 0x80 : 0;
+      const mag = Math.log(1 + MU * Math.abs(x)) / LOG_1_MU;
+      bytes[i] = sign | (Math.min(127, Math.floor(mag * 127.99)) & 0x7f);
+    }
+
+    const rms = Math.sqrt(sumSq / outLen);
+    if (rms < 0.014) return null; // Noise gate: send 0 bytes when quiet!
+
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+
+  function decodeMuLawBase64(b64) {
+    const bin = atob(b64);
+    const len = bin.length;
+    const out = new Float32Array(len);
+    const MU = 255;
+    for (let i = 0; i < len; i++) {
+      const b = bin.charCodeAt(i);
+      const sign = b & 0x80 ? -1 : 1;
+      const mag = (b & 0x7f) / 127;
+      out[i] = sign * ((Math.pow(1 + MU, mag) - 1) / MU);
+    }
+    return out;
+  }
+
+  function startRelayCapture(stream) {
+    stopRelayCapture();
+    try {
+      const ctx = ensureVoiceAudioCtx();
+      if (!ctx) return;
+      const source = ctx.createMediaStreamSource(stream);
+      const processor = ctx.createScriptProcessor(4096, 1, 1);
+      const silentGain = ctx.createGain();
+      silentGain.gain.value = 0.0;
+
+      processor.onaudioprocess = (ev) => {
+        if (!voiceJoined || voiceMuted || peerRelayNeeded.size === 0) return;
+        const targets = [...peerRelayNeeded].filter((id) => id !== myId && voicePeersMap.has(id));
+        if (targets.length === 0) return;
+        const input = ev.inputBuffer.getChannelData(0);
+        const b64 = encodeMuLawBase64(input, ctx.sampleRate, 12000);
+        if (!b64) return;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'voice_audio', sr: 12000, d: b64, targets }));
+        }
+      };
+
+      source.connect(processor);
+      processor.connect(silentGain);
+      silentGain.connect(ctx.destination);
+      relayCaptureNodes = { source, processor, silentGain };
+    } catch (_) {}
+  }
+
+  function stopRelayCapture() {
+    if (relayCaptureNodes) {
+      try {
+        relayCaptureNodes.processor.onaudioprocess = null;
+        relayCaptureNodes.source.disconnect();
+        relayCaptureNodes.processor.disconnect();
+        relayCaptureNodes.silentGain.disconnect();
+      } catch (_) {}
+      relayCaptureNodes = null;
+    }
+    for (const t of peerRelayTimers.values()) clearTimeout(t);
+    peerRelayTimers.clear();
+    peerRelayNeeded.clear();
+    relayPlayHeads.clear();
+    for (const t of relaySpeakingTimers.values()) clearTimeout(t);
+    relaySpeakingTimers.clear();
+  }
+
+  function handleRelayVoiceAudio(fromId, sampleRate, b64) {
+    if (!voiceJoined || !fromId || fromId === myId || !b64) return;
+    // If direct WebRTC P2P is already connected for this peer, don't double-play!
+    const pc = peerConnections.get(fromId);
+    if (pc && pc.connectionState === 'connected') return;
+
+    // Ensure we also relay back to this peer if they are relaying to us!
+    peerRelayNeeded.add(fromId);
+
+    try {
+      const ctx = ensureVoiceAudioCtx();
+      if (!ctx) return;
+      const samples = decodeMuLawBase64(b64);
+      if (samples.length === 0) return;
+      const sr = Math.min(24000, Math.max(8000, Number(sampleRate) || 12000));
+      const audioBuf = ctx.createBuffer(1, samples.length, sr);
+      audioBuf.getChannelData(0).set(samples);
+
+      const src = ctx.createBufferSource();
+      src.buffer = audioBuf;
+      const gain = ctx.createGain();
+      gain.gain.value = 0.85;
+      src.connect(gain);
+      gain.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      let startAt = relayPlayHeads.get(fromId) || now + 0.04;
+      if (startAt < now + 0.01 || startAt > now + 0.4) {
+        startAt = now + 0.04;
+      }
+      src.start(startAt);
+      relayPlayHeads.set(fromId, startAt + audioBuf.duration);
+
+      // Show live speaking glow ring on speaker's seat
+      const seatEl = seatsLayer?.querySelector(`.seat-node[data-player-id="${CSS.escape(fromId)}"]`);
+      if (seatEl) seatEl.classList.add('voice-speaking');
+      if (relaySpeakingTimers.has(fromId)) clearTimeout(relaySpeakingTimers.get(fromId));
+      relaySpeakingTimers.set(
+        fromId,
+        setTimeout(() => {
+          const el = seatsLayer?.querySelector(`.seat-node[data-player-id="${CSS.escape(fromId)}"]`);
+          if (el) el.classList.remove('voice-speaking');
+          relaySpeakingTimers.delete(fromId);
+        }, 320)
+      );
+    } catch (_) {}
+  }
+
+  function scheduleRelayFallback(peerId) {
+    if (peerRelayTimers.has(peerId)) clearTimeout(peerRelayTimers.get(peerId));
+    peerRelayTimers.set(
+      peerId,
+      setTimeout(() => {
+        peerRelayTimers.delete(peerId);
+        if (!voiceJoined || !voicePeersMap.has(peerId)) return;
+        const pc = peerConnections.get(peerId);
+        if (!pc || pc.connectionState !== 'connected') {
+          peerRelayNeeded.add(peerId);
+        }
+      }, 2500)
+    );
+  }
 
   function unlockRemoteVoicePlayback() {
+    ensureVoiceAudioCtx();
     for (const audioEl of remoteAudioEls.values()) {
       if (audioEl && audioEl.paused && audioEl.srcObject) {
         audioEl.play().catch(() => {});
@@ -1949,6 +2114,7 @@
     closePeerConnection(peerId, false);
     const pc = new RTCPeerConnection(RTC_CONFIG);
     peerConnections.set(peerId, pc);
+    scheduleRelayFallback(peerId);
 
     if (localAudioStream) {
       for (const track of localAudioStream.getTracks()) {
@@ -1989,21 +2155,29 @@
 
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
-        unlockRemoteVoicePlayback();
-      } else if (pc.connectionState === 'failed') {
-        if (!turnRelayActive) {
-          showToast('⚠️ Voice blocked by mobile NAT/firewall. Add free Metered TURN key on Render!');
+        peerRelayNeeded.delete(peerId);
+        if (peerRelayTimers.has(peerId)) {
+          clearTimeout(peerRelayTimers.get(peerId));
+          peerRelayTimers.delete(peerId);
         }
-        closePeerConnection(peerId, true);
+        unlockRemoteVoicePlayback();
+      } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        // Seamlessly fall back to WebSocket Voice Relay so voice NEVER drops!
+        if (voiceJoined && voicePeersMap.has(peerId)) {
+          peerRelayNeeded.add(peerId);
+        }
+        if (pc.connectionState === 'failed') {
+          closePeerConnection(peerId, true, false);
+        }
       } else if (pc.connectionState === 'closed') {
-        closePeerConnection(peerId, true);
+        closePeerConnection(peerId, true, false);
       }
     };
 
     return pc;
   }
 
-  function closePeerConnection(peerId, clearPendingIce = true) {
+  function closePeerConnection(peerId, clearPendingIce = true, clearRelay = true) {
     const pc = peerConnections.get(peerId);
     if (pc) {
       try {
@@ -2021,6 +2195,13 @@
     }
     if (clearPendingIce) {
       pendingIceCandidates.delete(peerId);
+    }
+    if (clearRelay) {
+      peerRelayNeeded.delete(peerId);
+      if (peerRelayTimers.has(peerId)) {
+        clearTimeout(peerRelayTimers.get(peerId));
+        peerRelayTimers.delete(peerId);
+      }
     }
     detachSpeakingAnalyser(peerId);
   }
@@ -2050,7 +2231,8 @@
           data: { sdp: pc.localDescription }
         });
       } catch (err) {
-        console.warn('Voice offer error:', err);
+        peerRelayNeeded.add(peerId);
+        console.warn('Voice offer error (using relay):', err);
       }
     }
   }
@@ -2092,7 +2274,8 @@
         }
       }
     } catch (err) {
-      console.warn('Voice signal error:', err);
+      peerRelayNeeded.add(fromId);
+      console.warn('Voice signal error (using relay):', err);
     }
   }
 
@@ -2118,6 +2301,7 @@
       return;
     }
     voiceJoining = true;
+    ensureVoiceAudioCtx();
     try {
       // Direct hardware mic stream keeps Android/iOS/Chrome Hardware DSP AEC + Noise Suppression 100% active!
       localAudioStream = await navigator.mediaDevices.getUserMedia({
@@ -2153,9 +2337,10 @@
     voiceMuted = false;
     window.pokerSound?.setVoiceChatDucking(true);
     if (myId) attachSpeakingAnalyser(myId, localAudioStream);
+    startRelayCapture(localAudioStream);
     updateVoiceChatButtons();
     send({ type: 'voice_join' });
-    showToast('🎙️ Connected to Table Voice Chat (Hardware Echo & Noise Cancel)');
+    showToast('🎙️ Connected to Table Voice Chat!');
   }
 
   function leaveVoiceChat(notifyServer = true) {
@@ -2164,8 +2349,9 @@
     voiceMuted = false;
     window.pokerSound?.setVoiceChatDucking(false);
 
+    stopRelayCapture();
     for (const peerId of [...peerConnections.keys()]) {
-      closePeerConnection(peerId);
+      closePeerConnection(peerId, true, true);
     }
     if (myId) detachSpeakingAnalyser(myId);
     if (speakingPollTimer) {

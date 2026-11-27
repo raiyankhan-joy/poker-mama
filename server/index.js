@@ -37,7 +37,7 @@ const socketSessionMap = new Map();
 const rateLimitMap = new Map();
 
 function isRateLimited(clientId, msgType) {
-  if (msgType === 'voice_signal' || msgType === 'ping_latency' || msgType === 'hb') return false;
+  if (msgType === 'voice_signal' || msgType === 'voice_audio' || msgType === 'ping_latency' || msgType === 'hb') return false;
   const now = Date.now();
   let entry = rateLimitMap.get(clientId);
   if (!entry || now > entry.resetAt) {
@@ -1098,6 +1098,32 @@ wss.on('connection', (client) => {
             fromId: playerId,
             data: msg.data
           });
+        }
+        break;
+      }
+
+      case 'voice_audio': {
+        const ctx = getSessionContext(client.id);
+        if (!ctx) return;
+        const { room, playerId } = ctx;
+        if (!room.voicePeers || !room.voicePeers.has(playerId)) return;
+        if (room.voicePeers.get(playerId).muted) return;
+        if (typeof msg.d !== 'string' || msg.d.length === 0 || msg.d.length > 16000) return;
+
+        const sr = Math.min(24000, Math.max(8000, Number(msg.sr) || 12000));
+        const targets = Array.isArray(msg.targets) ? msg.targets : null;
+        const payload = { type: 'voice_audio', fromId: playerId, sr, d: msg.d };
+
+        const sendToPeer = (peerId) => {
+          if (peerId === playerId || !room.voicePeers.has(peerId)) return;
+          const ws = room.clients.get(peerId) || (room.spectators && room.spectators.get(peerId)?.ws);
+          if (ws) ws.sendJSON(payload);
+        };
+
+        if (targets) {
+          for (const tid of targets) sendToPeer(String(tid));
+        } else {
+          for (const peerId of room.voicePeers.keys()) sendToPeer(peerId);
         }
         break;
       }
