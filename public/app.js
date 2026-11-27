@@ -43,6 +43,7 @@
   const shuffleHashBadge = $('shuffle-hash-badge');
   const btnVoiceChat = $('btn-voice-chat');
   const btnVoiceMute = $('btn-voice-mute');
+  const btnVoicePtt = $('btn-voice-ptt');
   const voiceAudioContainer = $('voice-audio-container');
 
   // Table
@@ -1853,11 +1854,13 @@
       btnVoiceMute.classList.remove('hidden');
       btnVoiceMute.textContent = voiceMuted ? '🔇 Muted' : '🎤 Mic On';
       btnVoiceMute.classList.toggle('muted-off', voiceMuted);
+      btnVoicePtt?.classList.remove('hidden');
     } else {
       const peerCount = voicePeersMap.size;
       btnVoiceChat.textContent = peerCount > 0 ? `🎙️ Join Voice (${peerCount})` : '🎙️ Voice Chat';
       btnVoiceChat.classList.remove('voice-active');
       btnVoiceMute.classList.add('hidden');
+      btnVoicePtt?.classList.add('hidden');
     }
   }
 
@@ -2473,9 +2476,9 @@
     updateVoiceChatButtons();
   }
 
-  function toggleVoiceMute() {
+  function setMicMuted(muted) {
     if (!voiceJoined || !localAudioStream) return;
-    voiceMuted = !voiceMuted;
+    voiceMuted = Boolean(muted);
     for (const track of localAudioStream.getAudioTracks()) {
       track.enabled = !voiceMuted;
     }
@@ -2483,6 +2486,46 @@
     updateVoiceChatButtons();
     send({ type: 'voice_mute', muted: voiceMuted });
   }
+
+  function toggleVoiceMute() {
+    setMicMuted(!voiceMuted);
+  }
+
+  function setRemoteSpeakerVolume(vol) {
+    for (const audioEl of remoteAudioEls.values()) {
+      if (audioEl) audioEl.volume = vol;
+    }
+    if (relayOutBus && relayOutBus.gain) {
+      try {
+        relayOutBus.gain.gain.value = vol;
+      } catch (_) {}
+    }
+  }
+
+  let pttActive = false;
+  function startPtt(e) {
+    if (e) e.preventDefault();
+    if (!voiceJoined || pttActive) return;
+    pttActive = true;
+    btnVoicePtt?.classList.add('ptt-live');
+    if (btnVoicePtt) btnVoicePtt.textContent = '🔴 Talking...';
+    setRemoteSpeakerVolume(0.12); // Duck speaker while talking -> 0% echo!
+    setMicMuted(false);
+  }
+
+  function stopPtt(e) {
+    if (e) e.preventDefault();
+    if (!pttActive) return;
+    pttActive = false;
+    btnVoicePtt?.classList.remove('ptt-live');
+    if (btnVoicePtt) btnVoicePtt.textContent = '🗣️ Hold to Talk';
+    setMicMuted(true);
+    setRemoteSpeakerVolume(0.82);
+  }
+
+  btnVoicePtt?.addEventListener('pointerdown', startPtt);
+  window.addEventListener('pointerup', stopPtt);
+  window.addEventListener('pointercancel', stopPtt);
 
   btnVoiceChat?.addEventListener('click', () => {
     if (voiceJoined) leaveVoiceChat(true);
