@@ -3908,3 +3908,27 @@ html, body {
 .playing-card {
   transition: transform 0.16s ease !important;
 }
+
+button,
+.btn,
+.icon-btn,
+.act-btn,
+.sel-btn,
+.q-btn,
+.emote-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled),
+.act-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.live-tables-list,
+.log-list,
+.chat-list,
+.modal-content {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}

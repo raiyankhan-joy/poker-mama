@@ -1136,8 +1136,7 @@
       const potBox = displayPot.closest('.pot-display');
       if (potBox) {
         potBox.classList.remove('pot-bump');
-        void potBox.offsetWidth;
-        potBox.classList.add('pot-bump');
+        requestAnimationFrame(() => potBox.classList.add('pot-bump'));
       }
     }
     lastPot = state.pot;
@@ -1158,14 +1157,19 @@
       displayCurrentBet.textContent = `Current Bet: ${state.currentBet} 🪙`;
     }
 
-    // Side Pots display
+    // Side Pots display (memoized to avoid redundant DOM rebuilds)
     if (state.sidePots && state.sidePots.length > 1) {
       sidePotsBar.classList.remove('hidden');
-      sidePotsBar.innerHTML = state.sidePots
-        .map((sp) => `<span class="side-pot-pill">${escapeHtml(sp.label)}: ${sp.amount} 🪙</span>`)
-        .join('');
+      const spSig = state.sidePots.map((sp) => `${sp.label}:${sp.amount}`).join('|');
+      if (spSig !== sidePotsBar.dataset.sig) {
+        sidePotsBar.dataset.sig = spSig;
+        sidePotsBar.innerHTML = state.sidePots
+          .map((sp) => `<span class="side-pot-pill">${escapeHtml(sp.label)}: ${sp.amount} 🪙</span>`)
+          .join('');
+      }
     } else {
       sidePotsBar.classList.add('hidden');
+      sidePotsBar.dataset.sig = '';
     }
 
     const winningCodes = [];
