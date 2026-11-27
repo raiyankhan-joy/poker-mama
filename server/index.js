@@ -127,7 +127,7 @@ function scheduleNextStep(room) {
       if (more || game.allInRunoutPending) {
         scheduleNextStep(room);
       }
-    }, 1400);
+    }, 1000);
     return;
   }
 
@@ -142,9 +142,9 @@ function scheduleNextStep(room) {
   const currentPlayer = game.players[game.currentTurnIndex];
   if (!currentPlayer) return;
 
-  // 2) AI Bot turn (relaxed, realistic human-thinking pacing: 1.6s - 2.5s)
+  // 2) AI Bot turn (crisp, natural pacing: 1.1s - 1.7s)
   if (currentPlayer.isBot) {
-    const delay = 1600 + crypto.randomInt(0, 900);
+    const delay = 1100 + crypto.randomInt(0, 600);
     room.botTimer = setTimeout(() => {
       room.botTimer = null;
       if (!rooms.has(game.roomId)) return;

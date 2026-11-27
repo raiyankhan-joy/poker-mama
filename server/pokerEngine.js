@@ -1051,7 +1051,7 @@ class PokerGame {
         let eq = this._equityCache.get(cacheKey);
         if (!eq) {
           if (this._equityCache.size > 64) this._equityCache.clear();
-          eq = calculateEquity(viewer.holeCards, this.communityCards, oppCount, 110);
+          eq = calculateEquity(viewer.holeCards, this.communityCards, oppCount, oppCount >= 4 ? 35 : 45);
           this._equityCache.set(cacheKey, eq);
         }
         const potOddsPct = validActions.canCall

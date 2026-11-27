@@ -678,10 +678,10 @@
   });
   fetchLiveRooms();
   setInterval(() => {
-    if (!lobbyScreen.classList.contains('hidden')) {
+    if (!document.hidden && !lobbyScreen.classList.contains('hidden')) {
       fetchLiveRooms();
     }
-  }, 6000);
+  }, 10000);
 
   // Global Persistent Leaderboard API
   const leaderboardModal = $('leaderboard-modal');
@@ -878,27 +878,30 @@
     chatInput.value = '';
   });
 
-  function lockButtonsDuringAction() {
+  function lockButtonsDuringAction(label) {
     pendingAction = true;
     btnFold.disabled = true;
     btnCheckCall.disabled = true;
     btnRaise.disabled = true;
+    if (label && turnStatusText) {
+      turnStatusText.textContent = `⚡ ${label}...`;
+    }
   }
 
   // Betting Controls
   btnFold.addEventListener('click', () => {
     if (pendingAction) return;
-    lockButtonsDuringAction();
+    lockButtonsDuringAction('Folding');
     send({ type: 'player_action', action: 'fold' });
   });
 
   btnCheckCall.addEventListener('click', () => {
     if (pendingAction || !currentState || !currentState.validActions) return;
     if (currentState.validActions.canCheck) {
-      lockButtonsDuringAction();
+      lockButtonsDuringAction('Checking');
       send({ type: 'player_action', action: 'check' });
     } else if (currentState.validActions.canCall) {
-      lockButtonsDuringAction();
+      lockButtonsDuringAction('Calling');
       send({ type: 'player_action', action: 'call' });
     }
   });
