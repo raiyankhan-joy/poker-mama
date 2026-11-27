@@ -396,7 +396,46 @@
     return Math.min(22, Math.max(2, raw));
   }
 
+  function isTouchMobileDevice() {
+    return (
+      window.matchMedia?.('(pointer: coarse)').matches ||
+      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+    );
+  }
+
+  async function enterMobileLandscapeFullscreen(force = false) {
+    if (!force && !isTouchMobileDevice()) return;
+    try {
+      const el = document.documentElement;
+      if (!document.fullscreenElement && el.requestFullscreen) {
+        await el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+      } else if (!document.webkitFullscreenElement && el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      }
+    } catch (_) {}
+    try {
+      if (screen.orientation && typeof screen.orientation.lock === 'function') {
+        await screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch (_) {}
+  }
+
+  $('btn-landscape-mode')?.addEventListener('click', async () => {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      try {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      } catch (_) {}
+      try {
+        screen.orientation?.unlock?.();
+      } catch (_) {}
+    } else {
+      await enterMobileLandscapeFullscreen(true);
+    }
+  });
+
   $('btn-create-solo').addEventListener('click', () => {
+    enterMobileLandscapeFullscreen();
     const name = playerNameInput.value.trim() || 'Player 1';
     const coins = Math.max(10, Math.floor(Number(customCoinsInput.value) || selectedCoins));
     send({
@@ -411,6 +450,7 @@
   });
 
   $('btn-create-online').addEventListener('click', () => {
+    enterMobileLandscapeFullscreen();
     const name = playerNameInput.value.trim() || 'Player 1';
     const coins = Math.max(10, Math.floor(Number(customCoinsInput.value) || selectedCoins));
     send({
@@ -426,6 +466,7 @@
   });
 
   $('btn-quick-match').addEventListener('click', () => {
+    enterMobileLandscapeFullscreen();
     const name = playerNameInput.value.trim() || 'Player 1';
     const coins = Math.max(10, Math.floor(Number(customCoinsInput.value) || selectedCoins));
     send({
@@ -462,6 +503,7 @@
       focusRoomCodeInput('🔒 Enter a valid Room Code to Join!');
       return;
     }
+    enterMobileLandscapeFullscreen();
     roomCodeInput.value = code;
     send({ type: 'join_room', roomId: code, playerName: name, avatar: selectedAvatar });
   });
@@ -473,6 +515,7 @@
       focusRoomCodeInput('🔒 Enter a valid Room Code to Watch!');
       return;
     }
+    enterMobileLandscapeFullscreen();
     roomCodeInput.value = code;
     send({ type: 'spectate_room', roomId: code, playerName: name });
   });

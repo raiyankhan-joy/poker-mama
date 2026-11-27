@@ -3579,11 +3579,12 @@ html, body {
   }
 }
 
-/* ---------- MOBILE LANDSCAPE (SHORT SCREENS <= 500px HEIGHT) ---------- */
-@media (max-height: 500px) and (orientation: landscape) {
+/* ---------- MOBILE LANDSCAPE (HORIZONTAL PHONES <= 540px HEIGHT) ---------- */
+@media (max-height: 540px) and (orientation: landscape) {
   .top-bar {
     flex-direction: row;
-    padding: 4px 8px;
+    align-items: center;
+    padding: 4px calc(10px + env(safe-area-inset-right)) 4px calc(10px + env(safe-area-inset-left));
     gap: 6px;
   }
 
@@ -3592,23 +3593,87 @@ html, body {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
+    gap: 5px;
+  }
+
+  .top-left::-webkit-scrollbar,
+  .top-right::-webkit-scrollbar {
+    display: none;
+  }
+
+  .top-right .icon-btn {
+    padding: 4px 8px;
+    font-size: 0.72rem;
   }
 
   .table-arena {
-    padding: 8px 14px;
+    flex: 1;
+    min-height: 0;
+    padding: 24px 56px 20px;
   }
 
   .poker-table {
-    width: min(680px, 84vw);
-    height: 54dvh;
-    min-height: 165px;
+    width: min(640px, calc(100vw - 140px));
+    height: min(240px, 56dvh);
+    min-height: 155px;
+  }
+
+  .table-rail {
+    border-radius: 130px;
+  }
+
+  .table-felt {
+    inset: 9px;
+    border-radius: 120px;
+  }
+
+  .felt-inner-ring {
+    inset: 9px;
+    border-radius: 110px;
+  }
+
+  .card-slot.empty,
+  .playing-card {
+    width: 40px;
+    height: 57px;
+    padding: 2px 4px;
+  }
+
+  .card-back {
+    width: 24px;
+    height: 34px;
+  }
+
+  .playing-card.small {
+    width: 28px;
+    height: 40px;
+  }
+
+  .seat-node.is-me .playing-card.small {
+    width: 34px;
+    height: 48px;
+  }
+
+  .seat-box {
+    min-width: 78px;
+    max-width: 102px;
+    padding: 3px 6px;
+  }
+
+  .seat-name-row,
+  .seat-coins {
+    font-size: 0.66rem;
   }
 
   .action-dock {
     grid-template-columns: auto 1fr auto;
     grid-template-areas: "left center right";
-    padding: 4px 10px;
+    padding: 4px calc(10px + env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
     gap: 8px;
+  }
+
+  .my-hand-strength {
+    padding: 4px 8px;
   }
 
   .my-hand-strength .hand-mini-cards,
@@ -3619,6 +3684,17 @@ html, body {
     display: none;
   }
 
+  .controls-row {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .act-btn {
+    flex: 0 1 auto;
+    min-width: 76px;
+    padding: 6px 10px;
+  }
+
   .raise-panel {
     width: auto;
     order: 0;
@@ -3627,8 +3703,20 @@ html, body {
     padding: 3px 6px;
   }
 
+  #raise-slider {
+    width: 90px;
+    min-width: 70px;
+  }
+
   .quick-bet-row {
     display: none;
+  }
+
+  .floating-ptt-btn {
+    right: 12px;
+    bottom: 8px;
+    width: 46px;
+    height: 46px;
   }
 }
 
