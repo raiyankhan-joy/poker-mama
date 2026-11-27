@@ -1977,24 +1977,22 @@
 
     const rms = Math.sqrt(sumSq / outLen);
     const nowMs = Date.now();
-    const remotePlaying = nowMs < lastRemoteRelayPlayAt + 320;
+    const remotePlaying = nowMs < lastRemoteRelayPlayAt + 220;
 
     if (adaptiveState) {
-      // Track ambient room noise floor slowly when quiet
-      if (!adaptiveState.gateOpen && !remotePlaying && rms < 0.035) {
+      if (!adaptiveState.gateOpen && !remotePlaying && rms < 0.02) {
         adaptiveState.noiseFloor = adaptiveState.noiseFloor * 0.92 + rms * 0.08;
       }
-      const baseThresh = Math.max(0.011, Math.min(0.04, adaptiveState.noiseFloor * 2.2));
-      // Half-duplex anti-echo guard: while remote voice plays on speaker, block speaker bleed!
-      const thresh = remotePlaying ? Math.max(0.055, baseThresh * 3.0) : baseThresh;
+      const baseThresh = Math.max(0.0025, Math.min(0.015, adaptiveState.noiseFloor * 1.8));
+      const thresh = remotePlaying ? Math.max(0.018, baseThresh * 2.2) : baseThresh;
       if (rms >= thresh) {
         adaptiveState.gateOpen = true;
-        adaptiveState.holdUntil = nowMs + 280; // 280ms smooth voice hold so words never cut off!
+        adaptiveState.holdUntil = nowMs + 340;
       } else if (adaptiveState.gateOpen && nowMs > adaptiveState.holdUntil) {
         adaptiveState.gateOpen = false;
       }
       if (!adaptiveState.gateOpen) return null;
-    } else if (rms < 0.012) {
+    } else if (rms < 0.0025) {
       return null;
     }
 
@@ -2014,8 +2012,8 @@
       const mag = (b & 0x7f) / 127;
       out[i] = sign * ((Math.pow(1 + MU, mag) - 1) / MU);
     }
-    // 5ms cosine fade-in & fade-out eliminates clicks/pops between network chunks
-    const fadeSamples = Math.min(60, Math.floor(len / 4));
+    // 4ms cosine fade-in & fade-out eliminates clicks/pops between chunks
+    const fadeSamples = Math.min(48, Math.floor(len / 4));
     for (let i = 0; i < fadeSamples; i++) {
       const gain = 0.5 * (1 - Math.cos((Math.PI * i) / fadeSamples));
       out[i] *= gain;
@@ -2028,14 +2026,29 @@
     if (relayOutBus && relayOutBus.ctx === ctx) return relayOutBus.input;
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = 3400;
+    lp.frequency.value = 3800;
     lp.Q.value = 0.7;
     const gain = ctx.createGain();
-    gain.gain.value = 0.72; // Safe level prevents speaker-to-mic acoustic echo
+    gain.gain.value = 0.82;
     lp.connect(gain);
     gain.connect(ctx.destination);
     relayOutBus = { ctx, input: lp, lp, gain };
     return lp;
+  }
+
+  function primeVoiceAudioCtx() {
+    const ctx = ensureVoiceAudioCtx();
+    if (!ctx) return null;
+    try {
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      // Play 1 silent sample synchronously inside user click gesture to permanently unlock iOS/Android audio!
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch (_) {}
+    return ctx;
   }
 
   function startRelayCapture(stream) {
@@ -2045,17 +2058,10 @@
       if (!ctx) return;
       if (ctx.state === 'suspended') ctx.resume().catch(() => {});
       const source = ctx.createMediaStreamSource(stream);
-
-      // Voice bandpass filter (160 Hz - 3400 Hz) kills fan/AC rumble & high-frequency hiss
       const highpass = ctx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 160;
-      highpass.Q.value = 0.8;
-
-      const lowpass = ctx.createBiquadFilter();
-      lowpass.type = 'lowpass';
-      lowpass.frequency.value = 3400;
-      lowpass.Q.value = 0.8;
+      highpass.frequency.value = 110;
+      highpass.Q.value = 0.7;
 
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       const silentGain = ctx.createGain();
@@ -2064,7 +2070,7 @@
       // Keep strong global ref so Chrome NEVER garbage-collects ScriptProcessor after 1-2s!
       window.__pokerRelayProc = processor;
 
-      const adaptiveState = { noiseFloor: 0.005, gateOpen: false, holdUntil: 0 };
+      const adaptiveState = { noiseFloor: 0.002, gateOpen: false, holdUntil: 0 };
 
       processor.onaudioprocess = (ev) => {
         if (!voiceJoined || voiceMuted || peerRelayNeeded.size === 0) return;
@@ -2079,11 +2085,10 @@
       };
 
       source.connect(highpass);
-      highpass.connect(lowpass);
-      lowpass.connect(processor);
+      highpass.connect(processor);
       processor.connect(silentGain);
       silentGain.connect(ctx.destination);
-      relayCaptureNodes = { source, highpass, lowpass, processor, silentGain };
+      relayCaptureNodes = { source, highpass, processor, silentGain };
     } catch (_) {}
   }
 
@@ -2094,7 +2099,6 @@
         relayCaptureNodes.processor.onaudioprocess = null;
         relayCaptureNodes.source.disconnect();
         relayCaptureNodes.highpass.disconnect();
-        relayCaptureNodes.lowpass.disconnect();
         relayCaptureNodes.processor.disconnect();
         relayCaptureNodes.silentGain.disconnect();
       } catch (_) {}
@@ -2121,7 +2125,6 @@
     const pc = peerConnections.get(fromId);
     if (pc && pc.connectionState === 'connected') return;
 
-    // Ensure we also relay back to this peer if they are relaying to us!
     peerRelayNeeded.add(fromId);
     lastRemoteRelayPlayAt = Date.now();
 
@@ -2139,16 +2142,15 @@
       src.buffer = audioBuf;
       src.connect(getRelayOutputBus(ctx));
 
-      // Smooth 120ms jitter buffer prevents choppy dropouts on mobile 4G/WiFi
+      // Smooth 100ms jitter buffer prevents choppy dropouts on mobile 4G/WiFi
       const now = ctx.currentTime;
-      let startAt = relayPlayHeads.get(fromId) || now + 0.12;
+      let startAt = relayPlayHeads.get(fromId) || now + 0.1;
       if (startAt < now + 0.015 || startAt > now + 0.65) {
-        startAt = now + 0.12;
+        startAt = now + 0.1;
       }
       src.start(startAt);
       relayPlayHeads.set(fromId, startAt + audioBuf.duration);
 
-      // Show live speaking glow ring on speaker's seat
       const seatEl = seatsLayer?.querySelector(`.seat-node[data-player-id="${CSS.escape(fromId)}"]`);
       if (seatEl) seatEl.classList.add('voice-speaking');
       if (relaySpeakingTimers.has(fromId)) clearTimeout(relaySpeakingTimers.get(fromId));
@@ -2176,7 +2178,7 @@
         if (!pc || pc.connectionState !== 'connected') {
           peerRelayNeeded.add(peerId);
         }
-      }, 3500)
+      }, 1800)
     );
   }
 
@@ -2396,7 +2398,7 @@
       return;
     }
     voiceJoining = true;
-    ensureVoiceAudioCtx();
+    primeVoiceAudioCtx();
     try {
       // Direct hardware mic stream keeps Android/iOS/Chrome Hardware DSP AEC + Noise Suppression 100% active!
       localAudioStream = await navigator.mediaDevices.getUserMedia({
