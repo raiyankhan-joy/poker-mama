@@ -149,6 +149,7 @@
         gameScreen.classList.add('hidden');
         lobbyScreen.classList.remove('hidden');
         syncLobbyHistoryUrl();
+        exitMobileLandscapeFullscreen();
         showToast(`ℹ️ ${msg.message || 'Session refreshed. Please start or join a table.'}`);
       } else if (msg.type === 'error') {
         pendingAction = false;
@@ -168,6 +169,7 @@
         gameScreen.classList.add('hidden');
         lobbyScreen.classList.remove('hidden');
         syncLobbyHistoryUrl();
+        exitMobileLandscapeFullscreen();
       } else if (msg.type === 'game_state') {
         pendingAction = false;
         hostId = msg.hostId;
@@ -420,15 +422,28 @@
     } catch (_) {}
   }
 
+  async function exitMobileLandscapeFullscreen() {
+    if (!isTouchMobileDevice() && !document.fullscreenElement && !document.webkitFullscreenElement) return;
+    try {
+      if (screen.orientation && typeof screen.orientation.lock === 'function') {
+        await screen.orientation.lock('portrait').catch(() => {});
+      }
+    } catch (_) {}
+    try {
+      screen.orientation?.unlock?.();
+    } catch (_) {}
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen().catch(() => {});
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    } catch (_) {}
+  }
+
   $('btn-landscape-mode')?.addEventListener('click', async () => {
     if (document.fullscreenElement || document.webkitFullscreenElement) {
-      try {
-        if (document.exitFullscreen) await document.exitFullscreen();
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      } catch (_) {}
-      try {
-        screen.orientation?.unlock?.();
-      } catch (_) {}
+      await exitMobileLandscapeFullscreen();
     } else {
       await enterMobileLandscapeFullscreen(true);
     }
@@ -779,8 +794,14 @@
   $('btn-rebuy').addEventListener('click', () => send({ type: 'rebuy' }));
   $('btn-gameover-rebuy').addEventListener('click', () => send({ type: 'rebuy' }));
   $('btn-restart-game').addEventListener('click', () => send({ type: 'restart_game' }));
-  $('btn-leave').addEventListener('click', () => send({ type: 'leave_room' }));
-  $('btn-gameover-leave').addEventListener('click', () => send({ type: 'leave_room' }));
+  $('btn-leave').addEventListener('click', () => {
+    exitMobileLandscapeFullscreen();
+    send({ type: 'leave_room' });
+  });
+  $('btn-gameover-leave').addEventListener('click', () => {
+    exitMobileLandscapeFullscreen();
+    send({ type: 'leave_room' });
+  });
 
   // Quick Emotes
   document.querySelectorAll('.emote-btn').forEach((btn) => {
@@ -2900,6 +2921,7 @@
       pendingAction = false;
       gameScreen.classList.add('hidden');
       lobbyScreen.classList.remove('hidden');
+      exitMobileLandscapeFullscreen();
       showToast('Returned to Lobby');
     }
   });

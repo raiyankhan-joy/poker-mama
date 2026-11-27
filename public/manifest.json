@@ -2,8 +2,8 @@
   "name": "POKER MAMA — Online Texas Hold'em",
   "short_name": "POKER MAMA",
   "start_url": "/",
-  "display": "fullscreen",
-  "orientation": "landscape",
+  "display": "standalone",
+  "orientation": "any",
   "background_color": "#060b14",
   "theme_color": "#060b14"
 }
