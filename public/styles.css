@@ -3391,10 +3391,15 @@ html, body {
     border-radius: 8px;
   }
 
-  .my-hand-strength .hand-mini-cards,
   .my-hand-strength .hand-draws-row,
   .my-hand-strength .strength-meter {
     display: none;
+  }
+
+  .my-hand-strength .hand-mini-cards {
+    display: flex;
+    gap: 3px;
+    margin-top: 2px;
   }
 
   .strength-label {
@@ -3584,8 +3589,9 @@ html, body {
   .top-bar {
     flex-direction: row;
     align-items: center;
-    padding: 4px calc(10px + env(safe-area-inset-right)) 4px calc(10px + env(safe-area-inset-left));
+    padding: 3px calc(8px + env(safe-area-inset-right)) 3px calc(8px + env(safe-area-inset-left));
     gap: 6px;
+    min-height: 36px;
   }
 
   .top-left,
@@ -3601,122 +3607,191 @@ html, body {
     display: none;
   }
 
+  .mini-logo {
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .top-left > *,
+  .top-right > * {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
   .top-right .icon-btn {
     padding: 4px 8px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
   }
 
   .table-arena {
     flex: 1;
     min-height: 0;
-    padding: 24px 56px 20px;
+    padding: 26px 52px 26px;
   }
 
   .poker-table {
-    width: min(640px, calc(100vw - 140px));
-    height: min(240px, 56dvh);
-    min-height: 155px;
+    width: min(620px, calc(100vw - 130px));
+    height: min(195px, 46dvh);
+    min-height: 132px;
   }
 
   .table-rail {
-    border-radius: 130px;
-  }
-
-  .table-felt {
-    inset: 9px;
     border-radius: 120px;
   }
 
+  .table-felt {
+    inset: 8px;
+    border-radius: 112px;
+  }
+
   .felt-inner-ring {
-    inset: 9px;
-    border-radius: 110px;
+    inset: 8px;
+    border-radius: 104px;
   }
 
   .card-slot.empty,
   .playing-card {
-    width: 40px;
-    height: 57px;
-    padding: 2px 4px;
+    width: 36px;
+    height: 52px;
+    padding: 2px 3px;
   }
 
   .card-back {
-    width: 24px;
-    height: 34px;
+    width: 22px;
+    height: 31px;
   }
 
   .playing-card.small {
-    width: 28px;
-    height: 40px;
+    width: 26px;
+    height: 37px;
   }
 
   .seat-node.is-me .playing-card.small {
-    width: 34px;
-    height: 48px;
+    width: 32px;
+    height: 45px;
   }
 
   .seat-box {
-    min-width: 78px;
-    max-width: 102px;
-    padding: 3px 6px;
+    min-width: 72px;
+    max-width: 94px;
+    padding: 2px 5px;
+  }
+
+  .seat-node.is-me .seat-box {
+    min-width: 84px;
+    max-width: 106px;
   }
 
   .seat-name-row,
   .seat-coins {
-    font-size: 0.66rem;
+    font-size: 0.62rem;
   }
 
   .action-dock {
-    grid-template-columns: auto 1fr auto;
+    width: 100%;
+    max-width: 100vw;
+    overflow: hidden;
+    grid-template-columns: minmax(120px, 168px) minmax(0, 1fr) minmax(72px, 92px);
     grid-template-areas: "left center right";
-    padding: 4px calc(10px + env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
-    gap: 8px;
+    padding: 4px calc(8px + env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
+    gap: 6px;
+  }
+
+  .dock-left,
+  .dock-center,
+  .dock-right {
+    min-width: 0;
   }
 
   .my-hand-strength {
-    padding: 4px 8px;
+    width: 100%;
+    padding: 4px 7px;
   }
 
-  .my-hand-strength .hand-mini-cards,
+  .my-hand-strength .hand-mini-cards {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 3px;
+    margin-top: 2px;
+  }
+
+  .my-hand-strength .mini-hand-card {
+    font-size: 0.62rem;
+    padding: 1px 4px;
+  }
+
   .my-hand-strength .hand-draws-row,
   .my-hand-strength .strength-meter,
   .turn-header-row,
   .act-sub {
-    display: none;
+    display: none !important;
+  }
+
+  .my-stack-box {
+    width: 100%;
+    padding: 4px 6px;
+    align-items: center;
+    text-align: center;
+  }
+
+  #my-coins-display {
+    font-size: 0.85rem;
   }
 
   .controls-row {
+    width: 100%;
     flex-wrap: nowrap;
-    gap: 6px;
+    justify-content: center;
+    gap: 5px;
   }
 
   .act-btn {
     flex: 0 1 auto;
-    min-width: 76px;
-    padding: 6px 10px;
+    min-width: 58px;
+    padding: 6px 8px;
+  }
+
+  .act-title {
+    font-size: 0.72rem;
+    white-space: nowrap;
   }
 
   .raise-panel {
     width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+    max-width: 185px;
     order: 0;
     flex-direction: row;
     align-items: center;
-    padding: 3px 6px;
+    padding: 3px 5px;
+  }
+
+  .raise-top {
+    width: 100%;
+    gap: 4px;
   }
 
   #raise-slider {
-    width: 90px;
-    min-width: 70px;
+    flex: 1;
+    width: 55px;
+    min-width: 44px;
+  }
+
+  #raise-number {
+    width: 38px;
+    font-size: 0.72rem;
   }
 
   .quick-bet-row {
-    display: none;
+    display: none !important;
   }
 
   .floating-ptt-btn {
-    right: 12px;
-    bottom: 8px;
-    width: 46px;
-    height: 46px;
+    right: 10px;
+    bottom: 6px;
+    width: 44px;
+    height: 44px;
   }
 }
 

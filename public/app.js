@@ -409,14 +409,18 @@
 
   async function enterMobileLandscapeFullscreen(force = false) {
     if (!force && !isTouchMobileDevice()) return;
-    try {
-      const el = document.documentElement;
-      if (!document.fullscreenElement && el.requestFullscreen) {
-        await el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
-      } else if (!document.webkitFullscreenElement && el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen();
-      }
-    } catch (_) {}
+    // Only request browser Fullscreen when user explicitly taps the ⛶ button
+    // (avoids Android Chrome's intrusive "to exit full screen, drag from top" overlay blocking buttons!)
+    if (force) {
+      try {
+        const el = document.documentElement;
+        if (!document.fullscreenElement && el.requestFullscreen) {
+          await el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+        } else if (!document.webkitFullscreenElement && el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+        }
+      } catch (_) {}
+    }
     try {
       if (screen.orientation && typeof screen.orientation.lock === 'function') {
         await screen.orientation.lock('landscape').catch(() => {});
