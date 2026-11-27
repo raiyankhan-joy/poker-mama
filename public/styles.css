@@ -3750,3 +3750,54 @@ html, body {
   color: #ffffff !important;
   box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
 }
+
+.floating-ptt-btn {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid rgba(52, 211, 153, 0.75);
+  background: radial-gradient(circle at 30% 30%, rgba(16, 185, 129, 0.92), rgba(5, 150, 105, 0.95));
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  z-index: 26;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 14px rgba(16, 185, 129, 0.4);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.floating-ptt-btn .ptt-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.floating-ptt-btn .ptt-lbl {
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.floating-ptt-btn.ptt-live {
+  transform: scale(1.1);
+  border-color: #fecaca;
+  background: radial-gradient(circle at 30% 30%, #ef4444, #b91c1c);
+  box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.3), 0 8px 24px rgba(239, 68, 68, 0.65);
+}
+
+@media (max-width: 768px) {
+  .floating-ptt-btn {
+    right: 8px;
+    bottom: 6px;
+    width: 50px;
+    height: 50px;
+  }
+}

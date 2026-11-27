@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>POKER MAMA — Real-Life Online Texas Hold'em</title>
-  <link rel="stylesheet" href="styles.css?v=15" />
+  <link rel="stylesheet" href="styles.css?v=16" />
 </head>
 <body>
   <!-- Toast Notification -->
@@ -285,6 +285,11 @@
         <button class="emote-btn" data-emote="😂 GG">😂</button>
         <button class="emote-btn" data-emote="🤔 Hmm...">🤔</button>
       </div>
+      <!-- Floating Mobile-Friendly Thumb Hold-to-Talk Button (shown when in Voice Chat) -->
+      <button id="floating-ptt-btn" class="floating-ptt-btn hidden" title="Hold to Talk (or hold V key)">
+        <span class="ptt-icon">🎙️</span>
+        <span class="ptt-lbl">HOLD</span>
+      </button>
       <div id="confetti-layer" class="confetti-layer"></div>
     </main>
 
@@ -510,7 +515,7 @@
     </div>
   </div>
 
-  <script src="sound.js?v=15"></script>
-  <script src="app.js?v=15"></script>
+  <script src="sound.js?v=16"></script>
+  <script src="app.js?v=16"></script>
 </body>
 </html>

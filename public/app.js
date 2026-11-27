@@ -44,6 +44,7 @@
   const btnVoiceChat = $('btn-voice-chat');
   const btnVoiceMute = $('btn-voice-mute');
   const btnVoicePtt = $('btn-voice-ptt');
+  const floatingPttBtn = $('floating-ptt-btn');
   const voiceAudioContainer = $('voice-audio-container');
 
   // Table
@@ -1855,12 +1856,14 @@
       btnVoiceMute.textContent = voiceMuted ? '🔇 Muted' : '🎤 Mic On';
       btnVoiceMute.classList.toggle('muted-off', voiceMuted);
       btnVoicePtt?.classList.remove('hidden');
+      floatingPttBtn?.classList.remove('hidden');
     } else {
       const peerCount = voicePeersMap.size;
       btnVoiceChat.textContent = peerCount > 0 ? `🎙️ Join Voice (${peerCount})` : '🎙️ Voice Chat';
       btnVoiceChat.classList.remove('voice-active');
       btnVoiceMute.classList.add('hidden');
       btnVoicePtt?.classList.add('hidden');
+      floatingPttBtn?.classList.add('hidden');
     }
   }
 
@@ -2027,16 +2030,27 @@
 
   function getRelayOutputBus(ctx) {
     if (relayOutBus && relayOutBus.ctx === ctx) return relayOutBus.input;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 140;
+    hp.Q.value = 0.7;
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = 3800;
+    lp.frequency.value = 4200;
     lp.Q.value = 0.7;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -22;
+    comp.ratio.value = 3.5;
+    comp.attack.value = 0.005;
+    comp.release.value = 0.1;
     const gain = ctx.createGain();
-    gain.gain.value = 0.82;
-    lp.connect(gain);
+    gain.gain.value = 0.85;
+    hp.connect(lp);
+    lp.connect(comp);
+    comp.connect(gain);
     gain.connect(ctx.destination);
-    relayOutBus = { ctx, input: lp, lp, gain };
-    return lp;
+    relayOutBus = { ctx, input: hp, hp, lp, comp, gain };
+    return hp;
   }
 
   function primeVoiceAudioCtx() {
@@ -2063,7 +2077,7 @@
       const source = ctx.createMediaStreamSource(stream);
       const highpass = ctx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 110;
+      highpass.frequency.value = 130;
       highpass.Q.value = 0.7;
 
       const processor = ctx.createScriptProcessor(4096, 1, 1);
@@ -2080,10 +2094,11 @@
         const targets = [...peerRelayNeeded].filter((id) => id !== myId && voicePeersMap.has(id));
         if (targets.length === 0) return;
         const input = ev.inputBuffer.getChannelData(0);
-        const b64 = encodeMuLawBase64(input, ctx.sampleRate, 12000, adaptiveState);
+        // 16kHz wideband HD speech (same bandwidth as HD VoIP / WhatsApp!)
+        const b64 = encodeMuLawBase64(input, ctx.sampleRate, 16000, adaptiveState);
         if (!b64) return;
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'voice_audio', sr: 12000, d: b64, targets }));
+          ws.send(JSON.stringify({ type: 'voice_audio', sr: 16000, d: b64, targets }));
         }
       };
 
@@ -2109,8 +2124,10 @@
     }
     if (relayOutBus) {
       try {
-        relayOutBus.lp.disconnect();
-        relayOutBus.gain.disconnect();
+        relayOutBus.hp?.disconnect();
+        relayOutBus.lp?.disconnect();
+        relayOutBus.comp?.disconnect();
+        relayOutBus.gain?.disconnect();
       } catch (_) {}
       relayOutBus = null;
     }
@@ -2504,28 +2521,46 @@
 
   let pttActive = false;
   function startPtt(e) {
-    if (e) e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (!voiceJoined || pttActive) return;
     pttActive = true;
     btnVoicePtt?.classList.add('ptt-live');
     if (btnVoicePtt) btnVoicePtt.textContent = '🔴 Talking...';
+    floatingPttBtn?.classList.add('ptt-live');
+    const lbl = floatingPttBtn?.querySelector('.ptt-lbl');
+    if (lbl) lbl.textContent = 'LIVE';
     setRemoteSpeakerVolume(0.12); // Duck speaker while talking -> 0% echo!
     setMicMuted(false);
   }
 
   function stopPtt(e) {
-    if (e) e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (!pttActive) return;
     pttActive = false;
     btnVoicePtt?.classList.remove('ptt-live');
     if (btnVoicePtt) btnVoicePtt.textContent = '🗣️ Hold to Talk';
+    floatingPttBtn?.classList.remove('ptt-live');
+    const lbl = floatingPttBtn?.querySelector('.ptt-lbl');
+    if (lbl) lbl.textContent = 'HOLD';
     setMicMuted(true);
-    setRemoteSpeakerVolume(0.82);
+    setRemoteSpeakerVolume(0.85);
   }
 
   btnVoicePtt?.addEventListener('pointerdown', startPtt);
+  floatingPttBtn?.addEventListener('pointerdown', startPtt);
   window.addEventListener('pointerup', stopPtt);
   window.addEventListener('pointercancel', stopPtt);
+
+  // Desktop Push-to-Talk hotkey: hold 'V' key to talk cleanly!
+  window.addEventListener('keydown', (e) => {
+    if (!voiceJoined || e.repeat) return;
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === 'v' || e.key === 'V') startPtt();
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'v' || e.key === 'V') stopPtt();
+  });
 
   btnVoiceChat?.addEventListener('click', () => {
     if (voiceJoined) leaveVoiceChat(true);
