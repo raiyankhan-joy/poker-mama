@@ -166,6 +166,8 @@
         lastRaiseTurnKey = '';
         seenCardKeys.clear();
         seenLogIds.clear();
+        if (seatsLayer) seatsLayer.dataset.sig = '';
+        if (communityCardsEl) communityCardsEl.dataset.sig = '';
         gameScreen.classList.add('hidden');
         lobbyScreen.classList.remove('hidden');
         syncLobbyHistoryUrl();
@@ -1206,13 +1208,48 @@
 
     const positions = getSeatPositions(Math.max(2, orderedPlayers.length));
 
-    seatsLayer.innerHTML = orderedPlayers
-      .map((p, idx) => {
-        const pos = positions[idx] || { x: 50, y: 50 };
-        const isMe = p.id === myId;
-        const isWinner = winnerIds.has(p.id);
-        const wonAmt = winnerPayouts.get(p.id) || 0;
-        const emoteObj = activeEmotes.get(p.id);
+    const seatsSig = [
+      state.handNumber,
+      state.phase,
+      winningCodes.join(','),
+      ...orderedPlayers.map((p) => {
+        const v = voicePeersMap.get(p.id);
+        const em = activeEmotes.get(p.id);
+        return [
+          p.id,
+          p.name,
+          p.avatar,
+          p.coins,
+          p.roundBet,
+          p.loanBalance || 0,
+          p.folded ? 1 : 0,
+          p.eliminated ? 1 : 0,
+          p.isDealer ? 1 : 0,
+          p.isSmallBlind ? 1 : 0,
+          p.isBigBlind ? 1 : 0,
+          p.isCurrentTurn ? 1 : 0,
+          p.lastAction || '',
+          p.winStreak || 0,
+          p.cardCount || 0,
+          p.holeCards ? p.holeCards.map((c) => c.code).join('') : '',
+          p.showdownHand ? p.showdownHand.name : '',
+          winnerIds.has(p.id) ? winnerPayouts.get(p.id) || 1 : 0,
+          v ? (v.muted ? 'm' : 'o') : '',
+          speakingPeers.has(p.id) ? 1 : 0,
+          em ? em.text : ''
+        ].join(':');
+      })
+    ].join('|');
+
+    if (seatsSig !== seatsLayer.dataset.sig) {
+      seatsLayer.dataset.sig = seatsSig;
+      seatsLayer.innerHTML = orderedPlayers
+        .map((p, idx) => {
+          const pos = positions[idx] || { x: 50, y: 50 };
+          const isMe = p.id === myId;
+          const isWinner = winnerIds.has(p.id);
+          const wonAmt = winnerPayouts.get(p.id) || 0;
+          const emoteObj = activeEmotes.get(p.id);
         const emoteHtml =
           emoteObj && Date.now() < emoteObj.expiresAt
             ? `<div class="seat-emote-bubble">${escapeHtml(emoteObj.text)}</div>`
@@ -1305,8 +1342,9 @@
             ${idx !== 0 ? betChipHtml : ''}
           </div>
         `;
-      })
-      .join('');
+        })
+        .join('');
+    }
 
     const isHost = myId === hostId;
 
