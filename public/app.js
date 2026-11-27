@@ -1950,8 +1950,10 @@
   const relayPlayHeads = new Map(); // peerId -> next AudioContext playback time
   const relaySpeakingTimers = new Map(); // peerId -> glow timeout
   let relayCaptureNodes = null;
+  let relayOutBus = null;
+  let lastRemoteRelayPlayAt = 0;
 
-  function encodeMuLawBase64(floatSamples, inRate, outRate = 12000) {
+  function encodeMuLawBase64(floatSamples, inRate, outRate = 12000, adaptiveState = null) {
     const ratio = Math.max(1, inRate / outRate);
     const outLen = Math.floor(floatSamples.length / ratio);
     if (outLen <= 0) return null;
@@ -1974,7 +1976,27 @@
     }
 
     const rms = Math.sqrt(sumSq / outLen);
-    if (rms < 0.004) return null; // Ultra-sensitive gate: transmits even soft speech, silences dead air
+    const nowMs = Date.now();
+    const remotePlaying = nowMs < lastRemoteRelayPlayAt + 320;
+
+    if (adaptiveState) {
+      // Track ambient room noise floor slowly when quiet
+      if (!adaptiveState.gateOpen && !remotePlaying && rms < 0.035) {
+        adaptiveState.noiseFloor = adaptiveState.noiseFloor * 0.92 + rms * 0.08;
+      }
+      const baseThresh = Math.max(0.011, Math.min(0.04, adaptiveState.noiseFloor * 2.2));
+      // Half-duplex anti-echo guard: while remote voice plays on speaker, block speaker bleed!
+      const thresh = remotePlaying ? Math.max(0.055, baseThresh * 3.0) : baseThresh;
+      if (rms >= thresh) {
+        adaptiveState.gateOpen = true;
+        adaptiveState.holdUntil = nowMs + 280; // 280ms smooth voice hold so words never cut off!
+      } else if (adaptiveState.gateOpen && nowMs > adaptiveState.holdUntil) {
+        adaptiveState.gateOpen = false;
+      }
+      if (!adaptiveState.gateOpen) return null;
+    } else if (rms < 0.012) {
+      return null;
+    }
 
     let bin = '';
     for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
@@ -1992,7 +2014,28 @@
       const mag = (b & 0x7f) / 127;
       out[i] = sign * ((Math.pow(1 + MU, mag) - 1) / MU);
     }
+    // 5ms cosine fade-in & fade-out eliminates clicks/pops between network chunks
+    const fadeSamples = Math.min(60, Math.floor(len / 4));
+    for (let i = 0; i < fadeSamples; i++) {
+      const gain = 0.5 * (1 - Math.cos((Math.PI * i) / fadeSamples));
+      out[i] *= gain;
+      out[len - 1 - i] *= gain;
+    }
     return out;
+  }
+
+  function getRelayOutputBus(ctx) {
+    if (relayOutBus && relayOutBus.ctx === ctx) return relayOutBus.input;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 3400;
+    lp.Q.value = 0.7;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.72; // Safe level prevents speaker-to-mic acoustic echo
+    lp.connect(gain);
+    gain.connect(ctx.destination);
+    relayOutBus = { ctx, input: lp, lp, gain };
+    return lp;
   }
 
   function startRelayCapture(stream) {
@@ -2002,38 +2045,67 @@
       if (!ctx) return;
       if (ctx.state === 'suspended') ctx.resume().catch(() => {});
       const source = ctx.createMediaStreamSource(stream);
+
+      // Voice bandpass filter (160 Hz - 3400 Hz) kills fan/AC rumble & high-frequency hiss
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 160;
+      highpass.Q.value = 0.8;
+
+      const lowpass = ctx.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.value = 3400;
+      lowpass.Q.value = 0.8;
+
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       const silentGain = ctx.createGain();
       silentGain.gain.value = 0.0;
+
+      // Keep strong global ref so Chrome NEVER garbage-collects ScriptProcessor after 1-2s!
+      window.__pokerRelayProc = processor;
+
+      const adaptiveState = { noiseFloor: 0.005, gateOpen: false, holdUntil: 0 };
 
       processor.onaudioprocess = (ev) => {
         if (!voiceJoined || voiceMuted || peerRelayNeeded.size === 0) return;
         const targets = [...peerRelayNeeded].filter((id) => id !== myId && voicePeersMap.has(id));
         if (targets.length === 0) return;
         const input = ev.inputBuffer.getChannelData(0);
-        const b64 = encodeMuLawBase64(input, ctx.sampleRate, 12000);
+        const b64 = encodeMuLawBase64(input, ctx.sampleRate, 12000, adaptiveState);
         if (!b64) return;
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'voice_audio', sr: 12000, d: b64, targets }));
         }
       };
 
-      source.connect(processor);
+      source.connect(highpass);
+      highpass.connect(lowpass);
+      lowpass.connect(processor);
       processor.connect(silentGain);
       silentGain.connect(ctx.destination);
-      relayCaptureNodes = { source, processor, silentGain };
+      relayCaptureNodes = { source, highpass, lowpass, processor, silentGain };
     } catch (_) {}
   }
 
   function stopRelayCapture() {
+    window.__pokerRelayProc = null;
     if (relayCaptureNodes) {
       try {
         relayCaptureNodes.processor.onaudioprocess = null;
         relayCaptureNodes.source.disconnect();
+        relayCaptureNodes.highpass.disconnect();
+        relayCaptureNodes.lowpass.disconnect();
         relayCaptureNodes.processor.disconnect();
         relayCaptureNodes.silentGain.disconnect();
       } catch (_) {}
       relayCaptureNodes = null;
+    }
+    if (relayOutBus) {
+      try {
+        relayOutBus.lp.disconnect();
+        relayOutBus.gain.disconnect();
+      } catch (_) {}
+      relayOutBus = null;
     }
     for (const t of peerRelayTimers.values()) clearTimeout(t);
     peerRelayTimers.clear();
@@ -2051,10 +2123,12 @@
 
     // Ensure we also relay back to this peer if they are relaying to us!
     peerRelayNeeded.add(fromId);
+    lastRemoteRelayPlayAt = Date.now();
 
     try {
       const ctx = ensureVoiceAudioCtx();
       if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
       const samples = decodeMuLawBase64(b64);
       if (samples.length === 0) return;
       const sr = Math.min(24000, Math.max(8000, Number(sampleRate) || 12000));
@@ -2063,15 +2137,13 @@
 
       const src = ctx.createBufferSource();
       src.buffer = audioBuf;
-      const gain = ctx.createGain();
-      gain.gain.value = 0.85;
-      src.connect(gain);
-      gain.connect(ctx.destination);
+      src.connect(getRelayOutputBus(ctx));
 
+      // Smooth 120ms jitter buffer prevents choppy dropouts on mobile 4G/WiFi
       const now = ctx.currentTime;
-      let startAt = relayPlayHeads.get(fromId) || now + 0.04;
-      if (startAt < now + 0.01 || startAt > now + 0.4) {
-        startAt = now + 0.04;
+      let startAt = relayPlayHeads.get(fromId) || now + 0.12;
+      if (startAt < now + 0.015 || startAt > now + 0.65) {
+        startAt = now + 0.12;
       }
       src.start(startAt);
       relayPlayHeads.set(fromId, startAt + audioBuf.duration);
@@ -2086,7 +2158,7 @@
           const el = seatsLayer?.querySelector(`.seat-node[data-player-id="${CSS.escape(fromId)}"]`);
           if (el) el.classList.remove('voice-speaking');
           relaySpeakingTimers.delete(fromId);
-        }, 320)
+        }, 360)
       );
     } catch (_) {}
   }
@@ -2102,7 +2174,7 @@
         if (!pc || pc.connectionState !== 'connected') {
           peerRelayNeeded.add(peerId);
         }
-      }, 2500)
+      }, 3500)
     );
   }
 
@@ -2150,7 +2222,7 @@
         audioEl.autoplay = true;
         audioEl.playsInline = true;
         audioEl.muted = false;
-        audioEl.volume = 0.78;
+        audioEl.volume = 0.72; // Safe speakerphone level for hardware AEC
         audioEl.dataset.peerId = peerId;
         voiceAudioContainer?.appendChild(audioEl);
         remoteAudioEls.set(peerId, audioEl);
@@ -2168,14 +2240,12 @@
           peerRelayTimers.delete(peerId);
         }
         unlockRemoteVoicePlayback();
-      } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+      } else if (pc.connectionState === 'failed') {
         // Seamlessly fall back to WebSocket Voice Relay so voice NEVER drops!
         if (voiceJoined && voicePeersMap.has(peerId)) {
           peerRelayNeeded.add(peerId);
         }
-        if (pc.connectionState === 'failed') {
-          closePeerConnection(peerId, true, false);
-        }
+        closePeerConnection(peerId, true, false);
       } else if (pc.connectionState === 'closed') {
         closePeerConnection(peerId, true, false);
       }
