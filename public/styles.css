@@ -3889,3 +3889,22 @@ html, body {
     height: 50px;
   }
 }
+
+/* ================= BUTTER-SMOOTH 60 FPS GPU COMPOSITING ================= */
+.poker-table {
+  contain: layout style;
+  transform: translateZ(0);
+}
+
+.seats-layer {
+  contain: layout style;
+}
+
+.seat-node {
+  transition: transform 0.18s ease, opacity 0.18s ease !important;
+  will-change: transform, opacity;
+}
+
+.playing-card {
+  transition: transform 0.16s ease !important;
+}

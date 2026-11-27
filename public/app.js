@@ -185,7 +185,7 @@
         if (wasInLobby) {
           pushGameHistoryState(currentState.roomId);
         }
-        renderGameState(currentState);
+        scheduleRenderGameState(currentState);
       } else if (msg.type === 'pong_latency') {
         const rtt = Math.max(1, Date.now() - (Number(msg.ts) || Date.now()));
         const pingEl = $('display-ping');
@@ -1079,6 +1079,19 @@
       dynamic.push({ x, y });
     }
     return dynamic;
+  }
+
+  let pendingRenderState = null;
+  let renderRafId = 0;
+  function scheduleRenderGameState(state) {
+    pendingRenderState = state;
+    if (renderRafId) return;
+    renderRafId = requestAnimationFrame(() => {
+      renderRafId = 0;
+      const s = pendingRenderState;
+      pendingRenderState = null;
+      if (s) renderGameState(s);
+    });
   }
 
   function renderGameState(state) {

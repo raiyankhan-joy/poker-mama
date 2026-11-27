@@ -1039,6 +1039,8 @@ class PokerGame {
       }
 
       if (
+        !viewer.folded &&
+        !viewer.eliminated &&
         this.phase !== PHASES.LOBBY &&
         this.phase !== PHASES.SHOWDOWN &&
         this.phase !== PHASES.GAME_OVER
