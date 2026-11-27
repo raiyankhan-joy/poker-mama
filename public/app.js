@@ -2325,6 +2325,7 @@
   }
 
   function unlockRemoteVoicePlayback() {
+    if (!voiceJoined) return;
     ensureVoiceAudioCtx();
     for (const audioEl of remoteAudioEls.values()) {
       if (audioEl && audioEl.paused && audioEl.srcObject) {
