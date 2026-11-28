@@ -413,11 +413,11 @@
     });
   }
 
-  // ================= UNIFIED DOWNLOAD APP MODAL (ANDROID / iOS / WINDOWS / MAC) =================
+  // ================= DOWNLOAD APP DROPDOWN (ANDROID / iOS / WINDOWS / MAC) =================
   const installAppRow = $('install-app-row');
-  const openDownloadModalBtn = $('btn-open-download-modal');
-  const downloadAppModal = $('download-app-modal');
-  const closeDownloadModalBtn = $('btn-close-download-modal');
+  const downloadDropdownWrap = $('download-dropdown-wrap');
+  const openDownloadBtn = $('btn-open-download-modal');
+  const downloadDropdownMenu = $('download-dropdown-menu');
   const downloadIosBtn = $('btn-download-ios');
   const iosInstallGuide = $('ios-install-guide');
   const installAppBtn = $('btn-install-app');
@@ -432,22 +432,36 @@
     installAppRow.classList.add('hidden');
   }
 
-  openDownloadModalBtn?.addEventListener('click', () => {
-    iosInstallGuide?.classList.add('hidden');
-    downloadAppModal?.classList.remove('hidden');
-  });
+  function closeDownloadDropdown() {
+    downloadDropdownMenu?.classList.add('hidden');
+    openDownloadBtn?.setAttribute('aria-expanded', 'false');
+    openDownloadBtn?.classList.remove('open');
+  }
 
-  closeDownloadModalBtn?.addEventListener('click', () => {
-    downloadAppModal?.classList.add('hidden');
-  });
-
-  downloadAppModal?.addEventListener('click', (e) => {
-    if (e.target === downloadAppModal) {
-      downloadAppModal.classList.add('hidden');
+  openDownloadBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = downloadDropdownMenu?.classList.contains('hidden');
+    if (isHidden) {
+      downloadDropdownMenu?.classList.remove('hidden');
+      openDownloadBtn.setAttribute('aria-expanded', 'true');
+      openDownloadBtn.classList.add('open');
+    } else {
+      closeDownloadDropdown();
     }
   });
 
-  downloadIosBtn?.addEventListener('click', () => {
+  document.addEventListener('click', (e) => {
+    if (downloadDropdownWrap && !downloadDropdownWrap.contains(e.target)) {
+      closeDownloadDropdown();
+    }
+  });
+
+  downloadDropdownMenu?.querySelectorAll('a.dl-menu-item').forEach((link) => {
+    link.addEventListener('click', () => closeDownloadDropdown());
+  });
+
+  downloadIosBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
     iosInstallGuide?.classList.toggle('hidden');
   });
 
@@ -462,7 +476,7 @@
       deferredInstallPrompt = null;
       installAppBtn.classList.add('hidden');
       installAppRow?.classList.add('hidden');
-      downloadAppModal?.classList.add('hidden');
+      closeDownloadDropdown();
       showToast('✅ POKER MAMA App installed on your device!');
     });
 
@@ -472,7 +486,7 @@
         const choice = await deferredInstallPrompt.userChoice.catch(() => null);
         if (choice && choice.outcome === 'accepted') {
           installAppBtn.classList.add('hidden');
-          downloadAppModal?.classList.add('hidden');
+          closeDownloadDropdown();
         }
         deferredInstallPrompt = null;
       }
