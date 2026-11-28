@@ -32,9 +32,15 @@ public class MainActivity extends BridgeActivity {
 
         if (this.bridge != null && this.bridge.getWebView() != null) {
             WebView webView = this.bridge.getWebView();
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+
             WebSettings settings = webView.getSettings();
             settings.setMediaPlaybackRequiresUserGesture(false);
             settings.setDomStorageEnabled(true);
+            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
 
             webView.addJavascriptInterface(new AndroidBridge(), "AndroidApp");
 

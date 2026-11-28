@@ -4268,7 +4268,7 @@ button:active:not(:disabled),
 }
 
 /* ================= MOBILE 60 FPS ULTRA-FAST SCROLL & TAP MODE ================= */
-@media (max-width: 900px), (hover: none) {
+@media (max-width: 960px), (hover: none), (pointer: coarse) {
   *,
   *::before,
   *::after {
@@ -4291,9 +4291,44 @@ button:active:not(:disabled),
   .player-name-bar,
   .live-table-row,
   .live-table-row:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.32) !important;
     transition: none !important;
     transform: none !important;
+  }
+
+  /* Kill heavy 60px-75px shadows & continuous 60fps box-shadow animations on Android WebView */
+  .table-rail,
+  .poker-table.high-stakes-glow .table-rail {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(245, 197, 66, 0.28) !important;
+  }
+
+  .table-felt {
+    box-shadow: none !important;
+    contain: layout style paint;
+  }
+
+  .action-dock,
+  .top-bar {
+    contain: layout style;
+  }
+
+  .playing-card {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.38) !important;
+    transition: none !important;
+  }
+
+  .seat-node {
+    transition: none !important;
+  }
+
+  .seat-node.active-turn .seat-box {
+    animation: none !important;
+    box-shadow: 0 0 0 2px var(--gold) !important;
+  }
+
+  .seat-node.voice-speaking .seat-box {
+    animation: none !important;
+    box-shadow: 0 0 0 2px #34d399 !important;
   }
 
   .btn,
@@ -4304,12 +4339,13 @@ button:active:not(:disabled),
   .filter-tab,
   .av-btn {
     box-shadow: none !important;
-    transition: transform 0.08s ease !important;
+    transition: transform 0.06s ease !important;
   }
 
   .live-pulse-dot,
   .status-dot.live,
-  .thinking-dots span {
+  .thinking-dots span,
+  .pot-display.pot-bump {
     animation: none !important;
   }
 }
