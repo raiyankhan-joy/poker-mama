@@ -2415,6 +2415,27 @@ body.theme-crimson .table-felt {
   text-shadow: 0 2px 16px rgba(245, 197, 66, 0.55);
 }
 
+.install-app-pill {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 197, 66, 0.55);
+  background: linear-gradient(135deg, rgba(245, 197, 66, 0.2), rgba(16, 185, 129, 0.18));
+  color: #fef3c7;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.install-app-pill:hover {
+  background: linear-gradient(135deg, rgba(245, 197, 66, 0.34), rgba(16, 185, 129, 0.28));
+  color: #ffffff;
+}
+
 /* ================= AAA LUXURY VIP LOBBY REDESIGN ================= */
 .lobby-bg-glow {
   background:

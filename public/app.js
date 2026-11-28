@@ -413,6 +413,53 @@
     });
   }
 
+  // ================= ONE-CLICK PWA INSTALL (ANDROID + IPHONE) =================
+  const installAppBtn = $('btn-install-app');
+  let deferredInstallPrompt = null;
+  const isStandaloneApp =
+    Boolean(window.AndroidApp) ||
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+  const isIosSafari =
+    /iPhone|iPad|iPod/i.test(navigator.userAgent || '') &&
+    /Safari/i.test(navigator.userAgent || '') &&
+    !/CriOS|FxiOS/i.test(navigator.userAgent || '');
+
+  if (installAppBtn && !isStandaloneApp) {
+    if (isIosSafari) {
+      installAppBtn.textContent = '📲 Install POKER MAMA on iPhone';
+      installAppBtn.classList.remove('hidden');
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      installAppBtn.textContent = '📲 Install POKER MAMA App';
+      installAppBtn.classList.remove('hidden');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      installAppBtn.classList.add('hidden');
+      showToast('✅ POKER MAMA App installed on your device!');
+    });
+
+    installAppBtn.addEventListener('click', async () => {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice.catch(() => null);
+        if (choice && choice.outcome === 'accepted') {
+          installAppBtn.classList.add('hidden');
+        }
+        deferredInstallPrompt = null;
+      } else if (isIosSafari) {
+        showToast('📲 iPhone: Tap Share (⬆️) at bottom → "Add to Home Screen" → Add!', 6500);
+      } else {
+        showToast('📲 Open browser menu (⋮) → "Install app" or "Add to Home screen"!', 5000);
+      }
+    });
+  }
+
   async function enterMobileLandscapeFullscreen(force = false) {
     if (!force && !isTouchMobileDevice()) return;
     // Native POKER MAMA Android APK bridge: instant hardware landscape with zero Chrome banner!
