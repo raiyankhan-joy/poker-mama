@@ -1,0 +1,71 @@
+name: Build POKER MAMA Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'mobile-app/**'
+      - '.github/workflows/build-android-apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Capacitor & Generate Android Project
+        working-directory: mobile-app
+        run: |
+          npm install
+          npx cap add android
+          npx cap sync android
+
+      - name: Apply Native MainActivity, Permissions & Luxury App Icons
+        working-directory: mobile-app
+        run: |
+          cp android-overrides/MainActivity.java android/app/src/main/java/com/pokermama/app/MainActivity.java
+          cp android-overrides/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          python3 -c "import PIL" 2>/dev/null || python3 -m pip install --quiet pillow
+          python3 - <<'EOF'
+          from PIL import Image
+          import os
+          src = Image.open('assets/icon.png').convert('RGBA')
+          sizes = {'mipmap-mdpi': 48, 'mipmap-hdpi': 72, 'mipmap-xhdpi': 96, 'mipmap-xxhdpi': 144, 'mipmap-xxxhdpi': 192}
+          for folder, sz in sizes.items():
+              out_dir = os.path.join('android/app/src/main/res', folder)
+              os.makedirs(out_dir, exist_ok=True)
+              resized = src.resize((sz, sz), Image.LANCZOS)
+              resized.save(os.path.join(out_dir, 'ic_launcher.png'))
+              resized.save(os.path.join(out_dir, 'ic_launcher_round.png'))
+              resized.save(os.path.join(out_dir, 'ic_launcher_foreground.png'))
+          EOF
+
+      - name: Build POKER-MAMA.apk
+        working-directory: mobile-app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk ../../POKER-MAMA.apk
+          ls -lh ../../POKER-MAMA.apk
+
+      - name: Upload Downloadable POKER-MAMA.apk Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: POKER-MAMA-Android-APK
+          path: POKER-MAMA.apk
+          retention-days: 90
