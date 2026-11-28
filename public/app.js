@@ -407,8 +407,21 @@
     );
   }
 
+  if ('serviceWorker' in navigator && !window.AndroidApp) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
   async function enterMobileLandscapeFullscreen(force = false) {
     if (!force && !isTouchMobileDevice()) return;
+    // Native POKER MAMA Android APK bridge: instant hardware landscape with zero Chrome banner!
+    if (window.AndroidApp && typeof window.AndroidApp.setOrientation === 'function') {
+      try {
+        window.AndroidApp.setOrientation('landscape');
+      } catch (_) {}
+      return;
+    }
     try {
       const el = document.documentElement;
       if (!document.fullscreenElement && el.requestFullscreen) {
@@ -425,6 +438,12 @@
   }
 
   async function exitMobileLandscapeFullscreen() {
+    if (window.AndroidApp && typeof window.AndroidApp.setOrientation === 'function') {
+      try {
+        window.AndroidApp.setOrientation('portrait');
+      } catch (_) {}
+      return;
+    }
     if (!isTouchMobileDevice() && !document.fullscreenElement && !document.webkitFullscreenElement) return;
     try {
       if (screen.orientation && typeof screen.orientation.lock === 'function') {

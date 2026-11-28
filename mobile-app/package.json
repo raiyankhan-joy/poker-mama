@@ -1,0 +1,11 @@
+{
+  "name": "poker-mama-mobile",
+  "version": "1.0.0",
+  "description": "POKER MAMA Native Android App (Capacitor wrapper for live server)",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  }
+}

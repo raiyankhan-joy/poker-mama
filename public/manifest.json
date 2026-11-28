@@ -1,9 +1,25 @@
 {
-  "name": "POKER MAMA — Online Texas Hold'em",
+  "name": "POKER MAMA — Real-Life Online Texas Hold'em",
   "short_name": "POKER MAMA",
+  "description": "Play Real-Life Online Texas Hold'em Poker with Friends & Live Voice Chat.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#060b14",
-  "theme_color": "#060b14"
+  "theme_color": "#060b14",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
