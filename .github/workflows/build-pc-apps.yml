@@ -1,0 +1,48 @@
+name: Build POKER MAMA PC Apps (Windows & Mac)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'desktop-app/**'
+      - '.github/workflows/build-pc-apps.yml'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install & Build Windows EXE
+        working-directory: desktop-app
+        run: |
+          npm install
+          npm run build:win
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: POKER-MAMA-Windows-EXE
+          path: desktop-app/dist/POKER-MAMA-Windows.exe
+          retention-days: 90
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install & Build Mac DMG
+        working-directory: desktop-app
+        run: |
+          npm install
+          npm run build:mac
+      - name: Upload Mac DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: POKER-MAMA-Mac-DMG
+          path: desktop-app/dist/POKER-MAMA-Mac-arm64.dmg
+          retention-days: 90
