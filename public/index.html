@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <title>POKER MAMA — Real-Life Online Texas Hold'em</title>
-  <link rel="stylesheet" href="styles.css?v=41" />
+  <link rel="stylesheet" href="styles.css?v=42" />
 </head>
 <body>
   <!-- Toast Notification -->
@@ -21,58 +21,54 @@
   <section id="lobby-screen" class="lobby-screen">
     <div class="lobby-bg-glow"></div>
     <div class="lobby-container">
-      <header class="brand-header luxury-navbar">
-        <div class="nav-brand-left">
-          <img src="icons/icon-192.png" alt="POKER MAMA" class="nav-brand-icon" width="42" height="42" />
-          <div class="nav-brand-copy">
-            <h1>POKER MAMA</h1>
-            <p class="brand-bangla-slogan">খেলি পোকার &bull; রাজের নানী জোকার</p>
-          </div>
+      <header class="brand-header">
+        <div class="brand-suits">
+          <span class="suit-gold">♠</span>
+          <span class="suit-red">♥</span>
+          <span class="suit-red">♦</span>
+          <span class="suit-gold">♣</span>
         </div>
+        <h1>POKER MAMA</h1>
+        <p class="brand-bangla-slogan">খেলি পোকার &bull; রাজের নানী জোকার</p>
+        <p class="brand-subtitle">Live Online Texas Hold'em &bull; Friends, AI &amp; Voice Chat</p>
+        <div class="install-app-row" id="install-app-row">
+          <div class="download-dropdown-wrap" id="download-dropdown-wrap">
+            <button type="button" id="btn-open-download-modal" class="install-app-pill apk-pill" aria-expanded="false">
+              Download App <span class="dl-caret">▾</span>
+            </button>
 
-        <div class="nav-brand-right">
-          <button id="btn-global-leaderboard" class="nav-pill-btn ranks-pill" title="Global Leaderboard">Ranks</button>
-          <div class="install-app-row" id="install-app-row">
-            <div class="download-dropdown-wrap" id="download-dropdown-wrap">
-              <button type="button" id="btn-open-download-modal" class="install-app-pill apk-pill" aria-expanded="false">
-                Download App <span class="dl-caret">▾</span>
+            <div id="download-dropdown-menu" class="download-dropdown-menu hidden">
+              <a class="dl-menu-item" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA.apk" download="POKER-MAMA.apk" target="_blank" rel="noopener">
+                <span class="dl-m-text"><strong>Android</strong><small>Direct Install</small></span>
+                <span class="dl-m-tag">APK</span>
+              </a>
+
+              <button type="button" id="btn-download-ios" class="dl-menu-item">
+                <span class="dl-m-text"><strong>iOS</strong><small>iPhone / iPad</small></span>
+                <span class="dl-m-tag">iOS</span>
               </button>
 
-              <div id="download-dropdown-menu" class="download-dropdown-menu hidden">
-                <a class="dl-menu-item" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA.apk" download="POKER-MAMA.apk" target="_blank" rel="noopener">
-                  <span class="dl-m-text"><strong>Android</strong><small>Direct Install</small></span>
-                  <span class="dl-m-tag">APK</span>
-                </a>
-
-                <button type="button" id="btn-download-ios" class="dl-menu-item">
-                  <span class="dl-m-text"><strong>iOS</strong><small>iPhone / iPad</small></span>
-                  <span class="dl-m-tag">iOS</span>
-                </button>
-
-                <div id="ios-install-guide" class="ios-install-guide hidden">
-                  Safari → Share → <strong>Add to Home Screen</strong>
-                </div>
-
-                <a class="dl-menu-item" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA-Windows.exe" download="POKER-MAMA-Windows.exe" target="_blank" rel="noopener">
-                  <span class="dl-m-text"><strong>Windows</strong><small>Desktop App</small></span>
-                  <span class="dl-m-tag">EXE</span>
-                </a>
-
-                <a class="dl-menu-item" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA-Mac-arm64.dmg" download="POKER-MAMA-Mac-arm64.dmg" target="_blank" rel="noopener">
-                  <span class="dl-m-text"><strong>macOS</strong><small>MacBook App</small></span>
-                  <span class="dl-m-tag">DMG</span>
-                </a>
+              <div id="ios-install-guide" class="ios-install-guide hidden">
+                Safari → Share → <strong>Add to Home Screen</strong>
               </div>
+
+              <a class="dl-menu-item" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA-Windows.exe" download="POKER-MAMA-Windows.exe" target="_blank" rel="noopener">
+                <span class="dl-m-text"><strong>Windows</strong><small>Desktop App</small></span>
+                <span class="dl-m-tag">EXE</span>
+              </a>
+
+              <a class="dl-menu-item" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA-Mac-arm64.dmg" download="POKER-MAMA-Mac-arm64.dmg" target="_blank" rel="noopener">
+                <span class="dl-m-text"><strong>macOS</strong><small>MacBook App</small></span>
+                <span class="dl-m-tag">DMG</span>
+              </a>
             </div>
           </div>
         </div>
       </header>
 
       <div class="player-name-bar">
-        <div class="player-id-group">
-          <label for="player-name-input">Player</label>
-          <input id="player-name-input" type="text" maxlength="18" placeholder="Enter your name" value="Player 1" />
-        </div>
+        <label for="player-name-input">Player Name</label>
+        <input id="player-name-input" type="text" maxlength="18" placeholder="Enter your name" value="Player 1" />
         <div class="avatar-picker" id="avatar-picker" title="Choose Your Table Avatar">
           <button type="button" class="av-btn active" data-avatar="😎">😎</button>
           <button type="button" class="av-btn" data-avatar="🦊">🦊</button>
@@ -84,7 +80,7 @@
           <button type="button" class="av-btn" data-avatar="💎">💎</button>
         </div>
         <div id="lobby-profile-pill" class="profile-pill" title="Your Casino Rank & XP">
-          <span id="profile-tier-text">Bronze &bull; Lv 1</span>
+          <span id="profile-tier-text">🥉 Bronze &bull; Lv 1</span>
           <div class="xp-bar-mini"><div id="profile-xp-fill" class="xp-fill-mini" style="width: 0%"></div></div>
         </div>
       </div>
@@ -93,18 +89,12 @@
         <!-- Create New Table Card -->
         <div class="lobby-card">
           <div class="card-header">
-            <h2><span class="title-suit">♠</span> Create Table</h2>
-            <span class="fee-pill">1 Coin / Round</span>
+            <h2>♠ Create New Table</h2>
+            <span class="fee-pill">1 🪙 / Round</span>
           </div>
 
           <div class="form-group">
-            <div class="form-label-row">
-              <label>Players (2 – 22)</label>
-              <div class="custom-coins-row inline-custom">
-                <span>Custom</span>
-                <input id="custom-players-input" type="number" min="2" max="22" value="4" />
-              </div>
-            </div>
+            <label>Number of Players (2 – 22)</label>
             <div class="selector-grid" id="player-count-selector">
               <button type="button" class="sel-btn" data-players="2">2</button>
               <button type="button" class="sel-btn active" data-players="4">4</button>
@@ -113,16 +103,14 @@
               <button type="button" class="sel-btn" data-players="10">10</button>
               <button type="button" class="sel-btn" data-players="12">12</button>
             </div>
+            <div class="custom-coins-row">
+              <span>Custom Players:</span>
+              <input id="custom-players-input" type="number" min="2" max="22" value="4" />
+            </div>
           </div>
 
           <div class="form-group">
-            <div class="form-label-row">
-              <label>Starting Coins</label>
-              <div class="custom-coins-row inline-custom">
-                <span>Custom</span>
-                <input id="custom-coins-input" type="number" min="10" max="100000" value="100" />
-              </div>
-            </div>
+            <label>Starting Coins per Player</label>
             <div class="selector-grid coins-grid" id="coins-preset-selector">
               <button type="button" class="sel-btn" data-coins="50">50</button>
               <button type="button" class="sel-btn active" data-coins="100">100</button>
@@ -130,18 +118,22 @@
               <button type="button" class="sel-btn" data-coins="500">500</button>
               <button type="button" class="sel-btn" data-coins="1000">1000</button>
             </div>
+            <div class="custom-coins-row">
+              <span>Custom Coins:</span>
+              <input id="custom-coins-input" type="number" min="10" max="100000" value="100" />
+            </div>
           </div>
 
           <div class="lobby-cta-stack">
             <button id="btn-create-solo" class="btn btn-gold btn-lg">
-              Play vs AI Bots
+              <span>🤖</span> Play vs AI Bots
             </button>
             <div class="create-actions">
               <button id="btn-create-online" class="btn btn-emerald btn-lg">
-                Create Room
+                <span>🌐</span> Create Room
               </button>
               <button id="btn-quick-match" class="btn btn-sapphire btn-lg">
-                Quick Match
+                <span>⚡</span> Quick Match
               </button>
             </div>
           </div>
@@ -150,14 +142,14 @@
         <!-- Join Online Room + Live Tables Card -->
         <div class="lobby-card join-card">
           <div class="card-header">
-            <h2><span class="title-suit red">♦</span> Live Tables &amp; Join</h2>
-            <span class="fee-pill private-pill">Code Protected</span>
+            <h2>🌐 Live Tables &amp; Join</h2>
+            <button id="btn-global-leaderboard" class="icon-btn ranks-btn" title="Global Leaderboard">🏆 Ranks</button>
           </div>
 
           <div class="join-inline-row">
             <input id="room-code-input" class="room-code-input" type="text" maxlength="120" placeholder="ENTER ROOM CODE" />
             <button id="btn-join-room" class="btn btn-gold" title="Join table with Room Code">Join</button>
-            <button id="btn-watch-room" class="btn btn-watch-violet" title="Watch live table with Room Code">Watch</button>
+            <button id="btn-watch-room" class="btn btn-watch-violet" title="Watch live table with Room Code">👁️ Watch</button>
           </div>
 
           <div class="live-tables-section">
@@ -556,7 +548,7 @@
     </div>
   </div>
 
-  <script defer src="sound.js?v=41"></script>
-  <script defer src="app.js?v=41"></script>
+  <script defer src="sound.js?v=42"></script>
+  <script defer src="app.js?v=42"></script>
 </body>
 </html>
