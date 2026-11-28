@@ -3191,16 +3191,23 @@ html, body {
     padding: 2px 3px;
   }
 
+  .card-corner {
+    line-height: 1;
+  }
+
   .card-rank {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
+    line-height: 1;
   }
 
   .card-suit-sm {
-    font-size: 0.58rem;
+    display: none;
   }
 
   .card-center-suit {
-    font-size: 1rem;
+    top: 64%;
+    font-size: 1.18rem;
+    line-height: 1;
   }
 
   /* === SEATS ON MOBILE (NEVER CLIPPED AT LEFT/RIGHT/TOP/BOTTOM) === */
@@ -3227,7 +3234,7 @@ html, body {
   .playing-card.small {
     width: 28px;
     height: 40px;
-    padding: 2px 2px;
+    padding: 2px 3px;
     border-radius: 4px;
   }
 
@@ -3238,15 +3245,25 @@ html, body {
   }
 
   .playing-card.small .card-rank {
-    font-size: 0.6rem;
+    font-size: 0.64rem;
+  }
+
+  .seat-node.is-me .playing-card.small .card-rank {
+    font-size: 0.76rem;
   }
 
   .playing-card.small .card-suit-sm {
-    font-size: 0.5rem;
+    display: none;
   }
 
   .playing-card.small .card-center-suit {
-    font-size: 0.78rem;
+    top: 65%;
+    font-size: 0.86rem;
+  }
+
+  .seat-node.is-me .playing-card.small .card-center-suit {
+    top: 65%;
+    font-size: 1.08rem;
   }
 
   .seat-box {
@@ -3730,9 +3747,25 @@ html, body {
 
   .card-slot.empty,
   .playing-card {
-    width: 34px;
-    height: 48px;
-    padding: 2px 3px;
+    width: 36px;
+    height: 50px;
+    padding: 3px 4px;
+    border-radius: 5px;
+  }
+
+  .playing-card .card-rank {
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+
+  .playing-card .card-suit-sm {
+    display: none;
+  }
+
+  .playing-card .card-center-suit {
+    top: 65%;
+    font-size: 1.18rem;
+    line-height: 1;
   }
 
   .card-back {
@@ -3741,8 +3774,20 @@ html, body {
   }
 
   .playing-card.small {
-    width: 22px;
-    height: 31px;
+    width: 24px;
+    height: 34px;
+    padding: 2px 3px;
+    border-radius: 4px;
+  }
+
+  .playing-card.small .card-rank {
+    font-size: 0.62rem;
+    line-height: 1;
+  }
+
+  .playing-card.small .card-center-suit {
+    top: 66%;
+    font-size: 0.82rem;
   }
 
   .seat-cards {
@@ -3758,12 +3803,24 @@ html, body {
 
   .seat-node.is-me .seat-cards {
     margin-bottom: 0;
-    gap: 2px;
+    gap: 3px;
   }
 
   .seat-node.is-me .playing-card.small {
-    width: 30px;
-    height: 42px;
+    width: 32px;
+    height: 45px;
+    padding: 3px 3px;
+    border-radius: 5px;
+  }
+
+  .seat-node.is-me .playing-card.small .card-rank {
+    font-size: 0.76rem;
+    line-height: 1;
+  }
+
+  .seat-node.is-me .playing-card.small .card-center-suit {
+    top: 65%;
+    font-size: 1.06rem;
   }
 
   .seat-box {
