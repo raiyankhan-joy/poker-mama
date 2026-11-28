@@ -481,7 +481,9 @@ const httpServer = http.createServer(async (req, res) => {
     }
 
     const isVersioned = /[?&]v=/.test(req.url || '');
-    const cacheHeader = isVersioned ? 'public, max-age=86400' : 'no-cache';
+    const cacheHeader = isVersioned
+      ? 'public, max-age=86400'
+      : 'no-store, no-cache, must-revalidate';
     const enc = req.headers['accept-encoding'] || '';
     if (cached.br && /\bbr\b/i.test(enc)) {
       res.writeHead(200, {

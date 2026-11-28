@@ -696,16 +696,17 @@ body {
 }
 
 .card-center-suit {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 1.9rem;
+  position: static;
+  transform: none;
+  align-self: center;
+  margin: auto 0;
+  font-size: 1.75rem;
+  line-height: 1;
   opacity: 0.92;
 }
 
 .playing-card.small .card-center-suit {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
 }
 
 .card-back {
@@ -3201,12 +3202,11 @@ html, body {
   }
 
   .card-suit-sm {
-    display: none;
+    display: none !important;
   }
 
   .card-center-suit {
-    top: 64%;
-    font-size: 1.18rem;
+    font-size: 1.15rem;
     line-height: 1;
   }
 
@@ -3253,17 +3253,15 @@ html, body {
   }
 
   .playing-card.small .card-suit-sm {
-    display: none;
+    display: none !important;
   }
 
   .playing-card.small .card-center-suit {
-    top: 65%;
-    font-size: 0.86rem;
+    font-size: 0.85rem;
   }
 
   .seat-node.is-me .playing-card.small .card-center-suit {
-    top: 65%;
-    font-size: 1.08rem;
+    font-size: 1.05rem;
   }
 
   .seat-box {
@@ -3751,20 +3749,21 @@ html, body {
     height: 50px;
     padding: 3px 4px;
     border-radius: 5px;
+    overflow: hidden;
   }
 
   .playing-card .card-rank {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     line-height: 1;
   }
 
-  .playing-card .card-suit-sm {
-    display: none;
+  .playing-card .card-suit-sm,
+  .playing-card.small .card-suit-sm {
+    display: none !important;
   }
 
   .playing-card .card-center-suit {
-    top: 65%;
-    font-size: 1.18rem;
+    font-size: 1.12rem;
     line-height: 1;
   }
 
@@ -3781,13 +3780,12 @@ html, body {
   }
 
   .playing-card.small .card-rank {
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     line-height: 1;
   }
 
   .playing-card.small .card-center-suit {
-    top: 66%;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
   }
 
   .seat-cards {
@@ -3814,13 +3812,12 @@ html, body {
   }
 
   .seat-node.is-me .playing-card.small .card-rank {
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     line-height: 1;
   }
 
   .seat-node.is-me .playing-card.small .card-center-suit {
-    top: 65%;
-    font-size: 1.06rem;
+    font-size: 1.02rem;
   }
 
   .seat-box {
