@@ -413,13 +413,16 @@
     });
   }
 
-  // ================= ONE-CLICK PWA INSTALL & FREE APK DOWNLOAD =================
+  // ================= ONE-CLICK PWA INSTALL & FREE APK / PC DOWNLOAD =================
   const installAppRow = $('install-app-row');
   const installAppBtn = $('btn-install-app');
   const downloadApkBtn = $('btn-download-apk');
+  const downloadWinBtn = $('btn-download-win');
+  const downloadMacBtn = $('btn-download-mac');
   let deferredInstallPrompt = null;
   const isStandaloneApp =
     Boolean(window.AndroidApp) ||
+    Boolean(window.DesktopApp?.isDesktop) ||
     window.matchMedia?.('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
   const isIosSafari =
@@ -429,8 +432,14 @@
 
   if (isStandaloneApp && installAppRow) {
     installAppRow.classList.add('hidden');
-  } else if (isIosSafari && downloadApkBtn) {
-    downloadApkBtn.classList.add('hidden');
+  } else {
+    if (isIosSafari && downloadApkBtn) {
+      downloadApkBtn.classList.add('hidden');
+    }
+    if (!isTouchMobileDevice()) {
+      downloadWinBtn?.classList.remove('hidden');
+      downloadMacBtn?.classList.remove('hidden');
+    }
   }
 
   if (installAppBtn && !isStandaloneApp) {

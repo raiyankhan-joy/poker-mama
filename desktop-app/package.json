@@ -1,0 +1,53 @@
+{
+  "name": "poker-mama-desktop",
+  "productName": "POKER MAMA",
+  "version": "1.0.0",
+  "description": "POKER MAMA — Real-Life Online Texas Hold'em Desktop App (Windows & macOS)",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64",
+    "build:mac": "electron-builder --mac --arm64"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.pokermama.desktop",
+    "productName": "POKER MAMA",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "offline.html",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "artifactName": "POKER-MAMA-Windows.exe"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ],
+      "category": "public.app-category.card-games",
+      "icon": "assets/icon.png",
+      "artifactName": "POKER-MAMA-Mac-${arch}.dmg",
+      "identity": null,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "POKER MAMA uses your microphone for live table voice chat."
+      }
+    }
+  }
+}
