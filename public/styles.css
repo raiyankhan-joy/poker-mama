@@ -2456,6 +2456,104 @@ body.theme-crimson .table-felt {
   color: #ffffff;
 }
 
+.download-modal-box {
+  max-width: 440px;
+}
+
+.download-modal-sub {
+  margin: 0 0 14px;
+  font-size: 0.84rem;
+  color: #94a3b8;
+}
+
+.download-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.download-option-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.download-option-card:hover {
+  border-color: rgba(245, 197, 66, 0.55);
+  background: rgba(245, 197, 66, 0.1);
+}
+
+.download-option-card.opt-android {
+  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.download-option-card .dl-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.download-option-card .dl-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.download-option-card .dl-info strong {
+  font-size: 0.92rem;
+  color: #fef3c7;
+}
+
+.download-option-card .dl-info span {
+  font-size: 0.74rem;
+  color: #94a3b8;
+}
+
+.download-option-card .dl-arrow {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.ios-install-guide {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(245, 197, 66, 0.1);
+  border: 1px solid rgba(245, 197, 66, 0.35);
+  font-size: 0.8rem;
+  color: #fef3c7;
+  line-height: 1.5;
+}
+
+.ios-install-guide p {
+  margin: 4px 0 0;
+  color: #e2e8f0;
+}
+
+.download-pwa-quick {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(245, 197, 66, 0.5);
+  background: linear-gradient(135deg, rgba(245, 197, 66, 0.22), rgba(217, 155, 24, 0.24));
+  color: #fde68a;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 /* ================= AAA LUXURY VIP LOBBY REDESIGN ================= */
 .lobby-bg-glow {
   background:

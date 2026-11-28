@@ -413,51 +413,56 @@
     });
   }
 
-  // ================= ONE-CLICK PWA INSTALL & FREE APK / PC DOWNLOAD =================
+  // ================= UNIFIED DOWNLOAD APP MODAL (ANDROID / iOS / WINDOWS / MAC) =================
   const installAppRow = $('install-app-row');
+  const openDownloadModalBtn = $('btn-open-download-modal');
+  const downloadAppModal = $('download-app-modal');
+  const closeDownloadModalBtn = $('btn-close-download-modal');
+  const downloadIosBtn = $('btn-download-ios');
+  const iosInstallGuide = $('ios-install-guide');
   const installAppBtn = $('btn-install-app');
-  const downloadApkBtn = $('btn-download-apk');
-  const downloadWinBtn = $('btn-download-win');
-  const downloadMacBtn = $('btn-download-mac');
   let deferredInstallPrompt = null;
   const isStandaloneApp =
     Boolean(window.AndroidApp) ||
     Boolean(window.DesktopApp?.isDesktop) ||
     window.matchMedia?.('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
-  const isIosSafari =
-    /iPhone|iPad|iPod/i.test(navigator.userAgent || '') &&
-    /Safari/i.test(navigator.userAgent || '') &&
-    !/CriOS|FxiOS/i.test(navigator.userAgent || '');
 
   if (isStandaloneApp && installAppRow) {
     installAppRow.classList.add('hidden');
-  } else {
-    if (isIosSafari && downloadApkBtn) {
-      downloadApkBtn.classList.add('hidden');
-    }
-    if (!isTouchMobileDevice()) {
-      downloadWinBtn?.classList.remove('hidden');
-      downloadMacBtn?.classList.remove('hidden');
-    }
   }
 
-  if (installAppBtn && !isStandaloneApp) {
-    if (isIosSafari) {
-      installAppBtn.textContent = '📲 Install POKER MAMA on iPhone';
-      installAppBtn.classList.remove('hidden');
-    }
+  openDownloadModalBtn?.addEventListener('click', () => {
+    iosInstallGuide?.classList.add('hidden');
+    downloadAppModal?.classList.remove('hidden');
+  });
 
+  closeDownloadModalBtn?.addEventListener('click', () => {
+    downloadAppModal?.classList.add('hidden');
+  });
+
+  downloadAppModal?.addEventListener('click', (e) => {
+    if (e.target === downloadAppModal) {
+      downloadAppModal.classList.add('hidden');
+    }
+  });
+
+  downloadIosBtn?.addEventListener('click', () => {
+    iosInstallGuide?.classList.toggle('hidden');
+  });
+
+  if (installAppBtn && !isStandaloneApp) {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
-      installAppBtn.textContent = '📲 Install POKER MAMA App';
       installAppBtn.classList.remove('hidden');
     });
 
     window.addEventListener('appinstalled', () => {
       deferredInstallPrompt = null;
       installAppBtn.classList.add('hidden');
+      installAppRow?.classList.add('hidden');
+      downloadAppModal?.classList.add('hidden');
       showToast('✅ POKER MAMA App installed on your device!');
     });
 
@@ -467,12 +472,9 @@
         const choice = await deferredInstallPrompt.userChoice.catch(() => null);
         if (choice && choice.outcome === 'accepted') {
           installAppBtn.classList.add('hidden');
+          downloadAppModal?.classList.add('hidden');
         }
         deferredInstallPrompt = null;
-      } else if (isIosSafari) {
-        showToast('📲 iPhone: Tap Share (⬆️) at bottom → "Add to Home Screen" → Add!', 6500);
-      } else {
-        showToast('📲 Open browser menu (⋮) → "Install app" or "Add to Home screen"!', 5000);
       }
     });
   }

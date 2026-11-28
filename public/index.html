@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <title>POKER MAMA — Real-Life Online Texas Hold'em</title>
-  <link rel="stylesheet" href="styles.css?v=36" />
+  <link rel="stylesheet" href="styles.css?v=37" />
 </head>
 <body>
   <!-- Toast Notification -->
@@ -32,17 +32,8 @@
         <p class="brand-bangla-slogan">খেলি পোকার &bull; রাজের নানী জোকার</p>
         <p class="brand-subtitle">Live Online Texas Hold'em &bull; Friends, AI &amp; Voice Chat</p>
         <div class="install-app-row" id="install-app-row">
-          <a id="btn-download-apk" class="install-app-pill apk-pill" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA.apk" download="POKER-MAMA.apk" target="_blank" rel="noopener">
-            ⬇️ Android (.apk)
-          </a>
-          <a id="btn-download-win" class="install-app-pill hidden" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA-Windows.exe" download="POKER-MAMA-Windows.exe" target="_blank" rel="noopener">
-            💻 Windows (.exe)
-          </a>
-          <a id="btn-download-mac" class="install-app-pill hidden" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA-Mac-arm64.dmg" download="POKER-MAMA-Mac-arm64.dmg" target="_blank" rel="noopener">
-            🍎 Mac (.dmg)
-          </a>
-          <button type="button" id="btn-install-app" class="install-app-pill hidden" title="Install POKER MAMA App on Android or iPhone">
-            📲 Install Web App
+          <button type="button" id="btn-open-download-modal" class="install-app-pill apk-pill">
+            📲 Download App
           </button>
         </div>
       </header>
@@ -529,7 +520,65 @@
     </div>
   </div>
 
-  <script defer src="sound.js?v=36"></script>
-  <script defer src="app.js?v=36"></script>
+  <!-- Download App Modal (Android / iOS / Windows / macOS) -->
+  <div id="download-app-modal" class="modal-overlay hidden">
+    <div class="modal-content download-modal-box">
+      <div class="modal-header">
+        <h3>📲 Download POKER MAMA App</h3>
+        <button id="btn-close-download-modal" class="close-x">✕</button>
+      </div>
+      <p class="download-modal-sub">Choose your device to download or install POKER MAMA for free:</p>
+
+      <div class="download-options-grid">
+        <a class="download-option-card opt-android" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA.apk" download="POKER-MAMA.apk" target="_blank" rel="noopener">
+          <span class="dl-icon">🤖</span>
+          <div class="dl-info">
+            <strong>Android App</strong>
+            <span>Direct Install (.apk)</span>
+          </div>
+          <span class="dl-arrow">⬇️</span>
+        </a>
+
+        <button type="button" id="btn-download-ios" class="download-option-card opt-ios">
+          <span class="dl-icon">🍎</span>
+          <div class="dl-info">
+            <strong>iOS (iPhone / iPad)</strong>
+            <span>Install on Home Screen</span>
+          </div>
+          <span class="dl-arrow">📲</span>
+        </button>
+
+        <a class="download-option-card opt-win" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA-Windows.exe" download="POKER-MAMA-Windows.exe" target="_blank" rel="noopener">
+          <span class="dl-icon">💻</span>
+          <div class="dl-info">
+            <strong>Windows PC</strong>
+            <span>Portable Desktop App (.exe)</span>
+          </div>
+          <span class="dl-arrow">⬇️</span>
+        </a>
+
+        <a class="download-option-card opt-mac" href="https://github.com/raiyankhan-joy/poker-mama/releases/latest/download/POKER-MAMA-Mac-arm64.dmg" download="POKER-MAMA-Mac-arm64.dmg" target="_blank" rel="noopener">
+          <span class="dl-icon">🖥️</span>
+          <div class="dl-info">
+            <strong>macOS (MacBook)</strong>
+            <span>Apple Silicon App (.dmg)</span>
+          </div>
+          <span class="dl-arrow">⬇️</span>
+        </a>
+      </div>
+
+      <div id="ios-install-guide" class="ios-install-guide hidden">
+        <strong>🍎 How to Install on iOS (iPhone / iPad):</strong>
+        <p>1. Open this link in <strong>Safari</strong>.<br/>2. Tap the <strong>Share (⬆️)</strong> button at the bottom.<br/>3. Tap <strong>"Add to Home Screen"</strong> → <strong>Add</strong>.</p>
+      </div>
+
+      <button type="button" id="btn-install-app" class="download-pwa-quick hidden">
+        ⚡ Quick Install Web App (1-Click)
+      </button>
+    </div>
+  </div>
+
+  <script defer src="sound.js?v=37"></script>
+  <script defer src="app.js?v=37"></script>
 </body>
 </html>
