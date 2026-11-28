@@ -2415,8 +2415,16 @@ body.theme-crimson .table-felt {
   text-shadow: 0 2px 16px rgba(245, 197, 66, 0.55);
 }
 
-.install-app-pill {
+.install-app-row {
   margin-top: 10px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.install-app-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2429,10 +2437,22 @@ body.theme-crimson .table-felt {
   font-weight: 800;
   cursor: pointer;
   letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.install-app-pill.apk-pill {
+  border-color: rgba(52, 211, 153, 0.65);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(5, 150, 105, 0.34));
+  color: #ecfdf5;
 }
 
 .install-app-pill:hover {
   background: linear-gradient(135deg, rgba(245, 197, 66, 0.34), rgba(16, 185, 129, 0.28));
+  color: #ffffff;
+}
+
+.install-app-pill.apk-pill:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.44), rgba(5, 150, 105, 0.52));
   color: #ffffff;
 }
 

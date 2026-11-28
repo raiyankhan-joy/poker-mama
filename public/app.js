@@ -413,8 +413,10 @@
     });
   }
 
-  // ================= ONE-CLICK PWA INSTALL (ANDROID + IPHONE) =================
+  // ================= ONE-CLICK PWA INSTALL & FREE APK DOWNLOAD =================
+  const installAppRow = $('install-app-row');
   const installAppBtn = $('btn-install-app');
+  const downloadApkBtn = $('btn-download-apk');
   let deferredInstallPrompt = null;
   const isStandaloneApp =
     Boolean(window.AndroidApp) ||
@@ -424,6 +426,12 @@
     /iPhone|iPad|iPod/i.test(navigator.userAgent || '') &&
     /Safari/i.test(navigator.userAgent || '') &&
     !/CriOS|FxiOS/i.test(navigator.userAgent || '');
+
+  if (isStandaloneApp && installAppRow) {
+    installAppRow.classList.add('hidden');
+  } else if (isIosSafari && downloadApkBtn) {
+    downloadApkBtn.classList.add('hidden');
+  }
 
   if (installAppBtn && !isStandaloneApp) {
     if (isIosSafari) {
